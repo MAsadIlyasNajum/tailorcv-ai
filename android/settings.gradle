@@ -1,6 +1,16 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+
 plugins { id("com.facebook.react.settings") }
-extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex ->
+    ex.autolinkLibrariesFromCommand()
+}
+
 rootProject.name = 'TailorCvAi'
+
 include ':app'
+
+include ':react-native-config'
+project(':react-native-config').projectDir = file('../node_modules/react-native-config/android')
+
 includeBuild('../node_modules/@react-native/gradle-plugin')

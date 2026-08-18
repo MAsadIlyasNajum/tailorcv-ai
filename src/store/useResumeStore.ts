@@ -1,10 +1,6 @@
 import {create} from 'zustand';
 
-import {
-  clearLatestAnalysis,
-  getLatestAnalysis,
-  saveLatestAnalysis,
-} from '../services/storage/storage';
+import * as storage from '../services/storage/storage';
 import type {
   AnalysisResult,
   FinalResumeOutput,
@@ -45,7 +41,7 @@ interface ResumeStore {
 }
 
 const persistSnapshot = (state: Pick<ResumeStore, 'resumeText' | 'jobDescription' | 'analysisResult' | 'finalResumeOutput' | 'resumeMetadata' | 'professionalExperiences'>): void => {
-  saveLatestAnalysis({
+  storage.saveLatestAnalysis({
     resumeText: state.resumeText,
     jobDescription: state.jobDescription,
     analysisResult: state.analysisResult,
@@ -128,7 +124,11 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     persistSnapshot(get());
   },
   hydrateLatest: () => {
-    const latest = getLatestAnalysis();
+    if (typeof storage.getLatestAnalysis !== 'function') {
+      return;
+    }
+
+    const latest = storage.getLatestAnalysis();
     if (!latest) {
       return;
     }
@@ -145,7 +145,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     });
   },
   clearAll: () => {
-    clearLatestAnalysis();
+    storage.clearLatestAnalysis();
     set({
       resumeText: '',
       jobDescription: '',
