@@ -1,0 +1,169 @@
+import Config from 'react-native-config';
+
+import {
+  buildExperienceImprovementPrompt,
+  buildFinalOutputPrompt,
+  buildGeminiPrompt,
+} from './promptBuilder';
+import {parseAnalysisResponse, createAnalysisResult} from './analysisParser';
+import {
+  createFinalResumeOutput,
+  parseFinalOutputResponse,
+} from './finalOutputParser';
+import {parseExperienceImprovementResponse} from './experienceImprovementParser';
+import type {
+  AnalysisResult,
+  FinalResumeOutput,
+  ProfessionalExperience,
+} from '../../types/resume';
+
+export interface AIService {
+  analyzeResume: (resumeText: string, jobDescription: string) => Promise<AnalysisResult>;
+  generateFinalResumeOutput: (
+    resumeText: string,
+    jobDescription: string,
+    analysisResult: AnalysisResult,
+    experiences: ProfessionalExperience[],
+  ) => Promise<FinalResumeOutput>;
+  analyzeProfessionalExperience: (
+    resumeText: string,
+    jobDescription: string,
+    experiences: ProfessionalExperience[],
+  ) => Promise<Array<{
+    jobTitle: string;
+    company: string;
+    improvedSummary: string;
+    suggestedBullets: string[];
+    keywords: string[];
+    impactNotes: string[];
+  }>>;
+}
+
+const API_TIMEOUT_MS = 30000;
+
+export class GeminiService implements AIService {
+  private async callGemini(prompt: string): Promise<string> {
+    const apiKey = Config.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error('The AI service is not configured.');
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{text: prompt}],
+              },
+            ],
+          }),
+          signal: controller.signal,
+        },
+      );
+
+      if (!response.ok) {
+        const errorCode = response.status;
+
+        if (errorCode === 429) {
+          throw new Error('The AI service is temporarily busy. Please try again shortly.');
+        }
+
+        if (errorCode >= 500) {
+          throw new Error('The AI service is currently unavailable. Please try again.');
+        }
+
+        throw new Error('We could not complete the analysis. Please try again.');
+      }
+
+      const payload = await response.json();
+      const candidateText =
+        payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+
+      if (!candidateText) {
+        throw new Error('We could not safely process the AI response. Please try again.');
+      }
+
+      return candidateText;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('The analysis took too long. Please try again.');
+      }
+
+      if (error instanceof Error && error.message) {
+        throw error;
+      }
+
+      throw new Error('We could not complete the analysis. Please try again.');
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async analyzeResume(
+    resumeText: string,
+    jobDescription: string,
+  ): Promise<AnalysisResult> {
+    const prompt = buildGeminiPrompt(resumeText, jobDescription);
+    const candidateText = await this.callGemini(prompt);
+    const parsedResponse = parseAnalysisResponse(candidateText);
+    const result = createAnalysisResult(
+      parsedResponse,
+      resumeText,
+      jobDescription,
+    );
+
+    return result;
+  }
+
+  async analyzeProfessionalExperience(
+    resumeText: string,
+    jobDescription: string,
+    experiences: ProfessionalExperience[],
+  ): Promise<Array<{
+    jobTitle: string;
+    company: string;
+    improvedSummary: string;
+    suggestedBullets: string[];
+    keywords: string[];
+    impactNotes: string[];
+  }>> {
+    const prompt = buildExperienceImprovementPrompt(
+      resumeText,
+      jobDescription,
+      experiences,
+    );
+    const candidateText = await this.callGemini(prompt);
+
+    return parseExperienceImprovementResponse(candidateText);
+  }
+
+  async generateFinalResumeOutput(
+    resumeText: string,
+    jobDescription: string,
+    analysisResult: AnalysisResult,
+    experiences: ProfessionalExperience[],
+  ): Promise<FinalResumeOutput> {
+    const prompt = buildFinalOutputPrompt(
+      resumeText,
+      jobDescription,
+      analysisResult,
+      experiences,
+    );
+    const candidateText = await this.callGemini(prompt);
+    const parsedResponse = parseFinalOutputResponse(candidateText);
+
+    return createFinalResumeOutput(parsedResponse, analysisResult.id);
+  }
+}
+
+export const geminiService: AIService = new GeminiService();
