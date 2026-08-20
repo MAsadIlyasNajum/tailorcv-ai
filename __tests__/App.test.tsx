@@ -86,11 +86,12 @@ jest.mock('react-native-config', () => ({
   },
 }));
 
-jest.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
-  GlobalWorkerOptions: {
-    workerSrc: '',
-  },
-  getDocument: jest.fn(),
+jest.mock('react-native-pdf-text-extractor', () => ({
+  __esModule: true,
+  extractText: jest.fn(async () => ''),
+  getPageCount: jest.fn(async () => 1),
+  extractAllText: jest.fn(async () => ['']),
+  extractPageText: jest.fn(async () => ''),
 }));
 
 import App from '../App';

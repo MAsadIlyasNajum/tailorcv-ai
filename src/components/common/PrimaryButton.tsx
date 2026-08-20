@@ -29,14 +29,12 @@ export const PrimaryButton = ({
         disabled={isDisabled}
         contentStyle={styles.content}
         style={styles.button}
-        labelStyle={styles.label}>
+        labelStyle={styles.label}
+        icon={icon}>
         {loading ? (
           <ActivityIndicator animating size={16} color="#FFFFFF" />
         ) : (
-          <View style={styles.row}>
-            {icon ? <View style={styles.iconSlot}>{icon}</View> : null}
-            {label}
-          </View>
+          label
         )}
       </Button>
     </View>
@@ -60,15 +58,5 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  iconSlot: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
