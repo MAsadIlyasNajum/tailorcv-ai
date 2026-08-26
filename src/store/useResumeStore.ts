@@ -19,6 +19,7 @@ interface ResumeStore {
   isGeneratingFinalOutput: boolean;
   analysisError: string | null;
   finalOutputError: string | null;
+  usefulnessFeedback: 'yes' | 'no' | null;
   setResumeText: (text: string) => void;
   setJobDescription: (text: string) => void;
   setAnalysisResult: (result: AnalysisResult | null) => void;
@@ -35,12 +36,13 @@ interface ResumeStore {
   setIsGeneratingFinalOutput: (value: boolean) => void;
   setAnalysisError: (message: string | null) => void;
   setFinalOutputError: (message: string | null) => void;
+  setUsefulnessFeedback: (value: 'yes' | 'no' | null) => void;
   clearFinalResumeOutput: () => void;
   hydrateLatest: () => void;
   clearAll: () => void;
 }
 
-const persistSnapshot = (state: Pick<ResumeStore, 'resumeText' | 'jobDescription' | 'analysisResult' | 'finalResumeOutput' | 'resumeMetadata' | 'professionalExperiences'>): void => {
+const persistSnapshot = (state: Pick<ResumeStore, 'resumeText' | 'jobDescription' | 'analysisResult' | 'finalResumeOutput' | 'resumeMetadata' | 'professionalExperiences' | 'usefulnessFeedback'>): void => {
   storage.saveLatestAnalysis({
     resumeText: state.resumeText,
     jobDescription: state.jobDescription,
@@ -48,6 +50,7 @@ const persistSnapshot = (state: Pick<ResumeStore, 'resumeText' | 'jobDescription
     finalResumeOutput: state.finalResumeOutput,
     resumeMetadata: state.resumeMetadata,
     professionalExperiences: state.professionalExperiences,
+    usefulnessFeedback: state.usefulnessFeedback,
   });
 };
 
@@ -62,6 +65,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
   isGeneratingFinalOutput: false,
   analysisError: null,
   finalOutputError: null,
+  usefulnessFeedback: null,
   setResumeText: text => {
     set({resumeText: text});
     persistSnapshot(get());
@@ -71,7 +75,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     persistSnapshot(get());
   },
   setAnalysisResult: result => {
-    set({analysisResult: result, finalResumeOutput: null, analysisError: null});
+    set({analysisResult: result, finalResumeOutput: null, analysisError: null, usefulnessFeedback: null});
     persistSnapshot(get());
   },
   setFinalResumeOutput: result => {
@@ -119,6 +123,10 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
   setFinalOutputError: message => {
     set({finalOutputError: message});
   },
+  setUsefulnessFeedback: value => {
+    set({usefulnessFeedback: value});
+    persistSnapshot(get());
+  },
   clearFinalResumeOutput: () => {
     set({finalResumeOutput: null, finalOutputError: null});
     persistSnapshot(get());
@@ -142,6 +150,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
       professionalExperiences: latest.professionalExperiences ?? [],
       analysisError: null,
       finalOutputError: null,
+      usefulnessFeedback: latest.usefulnessFeedback ?? null,
     });
   },
   clearAll: () => {
@@ -157,6 +166,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
       isGeneratingFinalOutput: false,
       analysisError: null,
       finalOutputError: null,
+      usefulnessFeedback: null,
     });
   },
 }));

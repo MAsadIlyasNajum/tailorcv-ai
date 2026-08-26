@@ -80,13 +80,45 @@ jest.mock('react-native-blob-util', () => ({
   },
 }));
 
+jest.mock('react-native-pdf-text-extractor', () => ({
+  extractText: jest.fn(async () => ''),
+}));
+
 jest.mock('react-native-dotenv', () => ({
   GEMINI_API_KEY: 'test-api-key',
   APP_ENV: 'test',
 }));
 
+jest.mock('react-native-safe-area-context', () => {
+  const ReactMock = require('react');
+  return {
+    SafeAreaProvider: ({children}: {children?: React.ReactNode}) =>
+      ReactMock.createElement('SafeAreaProvider', null, children),
+    SafeAreaView: ({children}: {children?: React.ReactNode}) =>
+      ReactMock.createElement('SafeAreaView', null, children),
+  };
+});
+
+jest.mock('react-native-paper', () => {
+  const ReactMock = require('react');
+  const {Text: MockText, View: MockView} = require('react-native');
+  const PaperProvider = ({children}: {children?: React.ReactNode}) =>
+    ReactMock.createElement(MockView, null, children);
+  return {
+    MD3LightTheme: {colors: {}},
+    PaperProvider,
+    Button: ({children}: {children?: React.ReactNode}) =>
+      ReactMock.createElement(MockText, null, children),
+    Text: ({children}: {children?: React.ReactNode}) =>
+      ReactMock.createElement(MockText, null, children),
+    default: {PaperProvider},
+  };
+});
+
 import App from '../App';
 
-it('renders correctly', () => {
-  renderer.create(<App />);
+it('renders correctly', async () => {
+  await React.act(() => {
+    renderer.create(<App />);
+  });
 });

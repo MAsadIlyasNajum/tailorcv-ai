@@ -14,10 +14,12 @@ try {
 
 const LAST_ANALYSIS_KEY = 'latest-analysis';
 
-const isStorageReady = (): boolean => storage !== null;
+const isStorageReady = (
+  instance: typeof storage,
+): instance is NonNullable<typeof storage> => instance !== null;
 
 export const saveLatestAnalysis = (snapshot: ResumeStateSnapshot): void => {
-  if (!isStorageReady()) {
+  if (!isStorageReady(storage)) {
     return;
   }
 
@@ -25,11 +27,12 @@ export const saveLatestAnalysis = (snapshot: ResumeStateSnapshot): void => {
     ...snapshot,
     finalResumeOutput: snapshot.finalResumeOutput ?? null,
     professionalExperiences: snapshot.professionalExperiences ?? [],
+    usefulnessFeedback: snapshot.usefulnessFeedback ?? null,
   }));
 };
 
 export const getLatestAnalysis = (): ResumeStateSnapshot | null => {
-  if (!isStorageReady()) {
+  if (!isStorageReady(storage)) {
     return null;
   }
 
@@ -49,6 +52,7 @@ export const getLatestAnalysis = (): ResumeStateSnapshot | null => {
       finalResumeOutput: parsed.finalResumeOutput ?? null,
       resumeMetadata: parsed.resumeMetadata ?? null,
       professionalExperiences: parsed.professionalExperiences ?? [],
+      usefulnessFeedback: parsed.usefulnessFeedback ?? null,
     };
   } catch {
     return null;
@@ -56,7 +60,7 @@ export const getLatestAnalysis = (): ResumeStateSnapshot | null => {
 };
 
 export const clearLatestAnalysis = (): void => {
-  if (!isStorageReady()) {
+  if (!isStorageReady(storage)) {
     return;
   }
 

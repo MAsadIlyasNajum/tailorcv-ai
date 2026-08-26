@@ -75,4 +75,5 @@ export interface ResumeStateSnapshot {
   finalResumeOutput: FinalResumeOutput | null;
   resumeMetadata: ResumeMetadata | null;
   professionalExperiences: ProfessionalExperience[];
+  usefulnessFeedback: 'yes' | 'no' | null;
 }

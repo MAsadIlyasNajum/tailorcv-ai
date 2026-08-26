@@ -1,13 +1,13 @@
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Button, ActivityIndicator} from 'react-native-paper';
+import {Button, ActivityIndicator, type ButtonProps} from 'react-native-paper';
 
 interface PrimaryButtonProps {
   label: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  icon?: React.ReactNode;
+  icon?: ButtonProps['icon'];
   fullWidth?: boolean;
 }
 

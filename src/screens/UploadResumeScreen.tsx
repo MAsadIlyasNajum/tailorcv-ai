@@ -1,12 +1,15 @@
 import React, {useMemo, useState} from 'react';
 import {Alert, StyleSheet, Text, View} from 'react-native';
-import {Card, Divider} from 'react-native-paper';
+import {Card, Divider, TextInput} from 'react-native-paper';
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ScreenContainer} from '../components/common/ScreenContainer';
 import {pickResumePdf} from '../services/pdf/documentPicker';
 import {extractTextFromPdfFile} from '../services/pdf/pdfExtractor';
+import {normalizeResumeText} from '../utils/text/normalizeResumeText';
 import {useResumeStore} from '../store/useResumeStore';
+
+const MIN_PASTED_RESUME_LENGTH = 50;
 
 export const UploadResumeScreen = (): React.JSX.Element => {
   const resumeText = useResumeStore(state => state.resumeText);
@@ -16,6 +19,8 @@ export const UploadResumeScreen = (): React.JSX.Element => {
   const [isPicking, setIsPicking] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [pastedResume, setPastedResume] = useState('');
+  const [pasteError, setPasteError] = useState<string | null>(null);
 
   const fileSizeLabel = useMemo(() => {
     if (!resumeMetadata) {
@@ -65,17 +70,59 @@ export const UploadResumeScreen = (): React.JSX.Element => {
     }
   };
 
+  const handleUsePastedResume = (): void => {
+    setPasteError(null);
+
+    const normalized = normalizeResumeText(pastedResume);
+    if (normalized.trim().length < MIN_PASTED_RESUME_LENGTH) {
+      setPasteError(
+        'Pasted resume text is too short. Please paste your full resume text.',
+      );
+      return;
+    }
+
+    setResumeText(normalized);
+  };
+
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
         <Card style={styles.card}>
-          <Card.Title title="Upload Resume" subtitle="PDF only" />
+          <Card.Title title="Add Resume" subtitle="Upload a PDF or paste your resume text" />
           <Card.Content>
             <PrimaryButton
               label={resumeMetadata ? 'Replace PDF' : 'Select PDF'}
               onPress={handlePickResume}
               loading={isPicking || isExtracting}
               disabled={isPicking || isExtracting}
+            />
+
+            <Divider style={styles.divider} />
+
+            <Text style={styles.label}>Or paste resume text</Text>
+            <TextInput
+              mode="outlined"
+              multiline
+              value={pastedResume}
+              onChangeText={value => {
+                setPastedResume(value);
+                setPasteError(null);
+              }}
+              placeholder="Paste your full resume text here..."
+              numberOfLines={8}
+              style={styles.pasteInput}
+              onFocus={() => setPasteError(null)}
+              autoCapitalize="sentences"
+              textAlignVertical="top"
+              contentStyle={styles.pasteInputContent}
+            />
+            {pasteError ? (
+              <Text style={styles.errorText}>{pasteError}</Text>
+            ) : null}
+            <PrimaryButton
+              label="Use pasted resume"
+              onPress={handleUsePastedResume}
+              disabled={!pastedResume.trim()}
             />
 
             <Divider style={styles.divider} />
@@ -132,5 +179,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 8,
     color: '#334155',
+  },
+  pasteInput: {
+    backgroundColor: '#FFFFFF',
+    minHeight: 160,
+  },
+  pasteInputContent: {
+    minHeight: 160,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
 });

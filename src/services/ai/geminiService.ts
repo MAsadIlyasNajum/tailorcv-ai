@@ -1,5 +1,4 @@
 import {GEMINI_API_KEY} from 'react-native-dotenv';
-import {Platform} from 'react-native';
 
 import {
   buildExperienceImprovementPrompt,
@@ -17,10 +16,6 @@ import type {
   FinalResumeOutput,
   ProfessionalExperience,
 } from '../../types/resume';
-
-console.log(
-  `[GeminiService] GEMINI_API_KEY loaded: ${Boolean(GEMINI_API_KEY)}, length: ${GEMINI_API_KEY?.length ?? 0}, platform: ${Platform.OS}`,
-);
 
 export interface AIService {
   analyzeResume: (resumeText: string, jobDescription: string) => Promise<AnalysisResult>;
@@ -51,9 +46,6 @@ export class GeminiService implements AIService {
     if (!GEMINI_API_KEY) {
       throw new Error('The AI service is not configured.');
     }
-
-    const apiKeyPreview = `${GEMINI_API_KEY.slice(0, 4)}...${GEMINI_API_KEY.slice(-4)}`;
-    console.log('Gemini API key preview:', apiKeyPreview, 'length:', GEMINI_API_KEY.length);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
@@ -93,7 +85,6 @@ export class GeminiService implements AIService {
         let errorMessage = 'We could not complete the analysis. Please try again.';
         try {
           const errorPayload = await response.json();
-          console.log('Gemini error payload:', JSON.stringify(errorPayload));
           const detail = errorPayload?.error?.message;
           if (detail) {
             errorMessage = detail;

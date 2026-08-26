@@ -1,13 +1,8 @@
-import React, {useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
 import {Alert, Clipboard, StyleSheet, Text, View} from 'react-native';
-import {Button, Card, Chip, Divider} from 'react-native-paper';
-import {useNavigation} from '@react-navigation/native';
-import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Button, Card, Chip} from 'react-native-paper';
 
-import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ScreenContainer} from '../components/common/ScreenContainer';
-import {ROUTES} from '../constants/routes';
-import {runFinalOutputGeneration} from '../services/ai/analyzeResumeUseCase';
 import {useResumeStore} from '../store/useResumeStore';
 
 const EMPTY_RESULT = {
@@ -20,16 +15,10 @@ const EMPTY_RESULT = {
 };
 
 export const AnalysisResultScreen = (): React.JSX.Element => {
-  const navigation =
-    useNavigation<
-      NativeStackNavigationProp<AppStackParamList, typeof ROUTES.ANALYSIS_RESULT>
-    >();
   const result = useResumeStore(state => state.analysisResult);
-  const professionalExperiences = useResumeStore(state => state.professionalExperiences);
-  const isGeneratingFinalOutput = useResumeStore(
-    state => state.isGeneratingFinalOutput,
-  );
-  const finalOutputError = useResumeStore(state => state.finalOutputError);
+  const usefulnessFeedback = useResumeStore(state => state.usefulnessFeedback);
+  const setUsefulnessFeedback = useResumeStore(state => state.setUsefulnessFeedback);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   const viewModel = useMemo(() => {
     if (result) {
@@ -55,46 +44,23 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
     Alert.alert('Copied', 'Suggested summary copied to clipboard.');
   };
 
-  const handleGenerateFinalOutput = async (): Promise<void> => {
-    const previousFinalOutputId =
-      useResumeStore.getState().finalResumeOutput?.id ?? null;
-
-    await runFinalOutputGeneration();
-
-    const nextState = useResumeStore.getState();
-    const nextFinalOutputId = nextState.finalResumeOutput?.id ?? null;
-
-    if (
-      !nextState.finalOutputError &&
-      nextFinalOutputId &&
-      nextFinalOutputId !== previousFinalOutputId
-    ) {
-      navigation.navigate(ROUTES.FINAL_RESUME_OUTPUT);
-    }
+  const handleUsefulness = (value: 'yes' | 'no'): void => {
+    setUsefulnessFeedback(value);
+    setFeedbackSubmitted(true);
   };
 
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
         <Card style={styles.card}>
-          <Card.Title title="ATS Match Score" />
+          <Card.Title title="ATS Match Score" subtitle="ATS = Applicant Tracking System — the software recruiters use to filter resumes" />
           <Card.Content>
             <Text style={styles.score}>{viewModel.matchScore}%</Text>
-            <Button
-              mode="contained"
-              style={styles.finalOutputButton}
-              loading={isGeneratingFinalOutput}
-              disabled={isGeneratingFinalOutput || !result}
-              onPress={async () => {
-                await handleGenerateFinalOutput();
-              }}>
-              {isGeneratingFinalOutput
-                ? 'Generating Final Output...'
-                : 'Generate Final Resume Output'}
-            </Button>
-            {finalOutputError ? (
-              <Text style={styles.finalOutputError}>{finalOutputError}</Text>
-            ) : null}
+            <Text style={styles.scoreExplanation}>
+              This is an AI-estimated match based on how closely your resume
+              aligns with this job description. Use it as a rough guide, not a
+              precise measure.
+            </Text>
           </Card.Content>
         </Card>
 
@@ -112,8 +78,6 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
             )}
           </Card.Content>
         </Card>
-
-        <Divider />
 
         <Card style={styles.card}>
           <Card.Title title="Suggested Summary" />
@@ -159,38 +123,6 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
         </Card>
 
         <Card style={styles.card}>
-          <Card.Title title="Professional Experience Recommendations" />
-          <Card.Content style={styles.listContainer}>
-            {professionalExperiences.length ? (
-              professionalExperiences.map(experience => (
-                <View key={experience.id} style={styles.improvementBlock}>
-                  <Text style={styles.roleHeader}>{experience.jobTitle} · {experience.company}</Text>
-                  <Text style={styles.label}>Updated summary</Text>
-                  <Text style={styles.bodyText}>{experience.summary || 'No summary available yet.'}</Text>
-                  {experience.keywords.length ? (
-                    <View style={styles.chipsRow}>
-                      {experience.keywords.map(keyword => (
-                        <Chip key={`${experience.id}-${keyword}`} compact>{keyword}</Chip>
-                      ))}
-                    </View>
-                  ) : null}
-                  {experience.generatedSuggestions.length ? (
-                    <>
-                      <Text style={styles.label}>Suggestions</Text>
-                      {experience.generatedSuggestions.map((suggestion, index) => (
-                        <Text key={`${experience.id}-suggestion-${index}`} style={styles.tipText}>• {suggestion}</Text>
-                      ))}
-                    </>
-                  ) : null}
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>Add roles in the professional experience editor to see tailored recommendations.</Text>
-            )}
-          </Card.Content>
-        </Card>
-
-        <Card style={styles.card}>
           <Card.Title title="ATS Tips" />
           <Card.Content style={styles.listContainer}>
             {viewModel.atsTips.length ? (
@@ -202,6 +134,32 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
             )}
           </Card.Content>
         </Card>
+
+        {result ? (
+          <Card style={styles.card}>
+            <Card.Title title="Was this analysis helpful?" />
+            <Card.Content style={styles.feedbackRow}>
+              {usefulnessFeedback || feedbackSubmitted ? (
+                <Text style={styles.feedbackConfirmed}>Thanks for your feedback.</Text>
+              ) : (
+                <>
+                  <Button
+                    mode="contained"
+                    onPress={() => handleUsefulness('yes')}
+                    style={styles.feedbackButton}>
+                    {'\u{1F44D}'} Yes
+                  </Button>
+                  <Button
+                    mode="outlined"
+                    onPress={() => handleUsefulness('no')}
+                    style={styles.feedbackButton}>
+                    {'\u{1F44E}'} No
+                  </Button>
+                </>
+              )}
+            </Card.Content>
+          </Card>
+        ) : null}
       </View>
     </ScreenContainer>
   );
@@ -218,6 +176,12 @@ const styles = StyleSheet.create({
     fontSize: 44,
     color: '#2563EB',
     fontWeight: '700',
+  },
+  scoreExplanation: {
+    marginTop: 6,
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
   },
   summary: {
     fontSize: 14,
@@ -267,14 +231,18 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignSelf: 'flex-start',
   },
-  finalOutputButton: {
-    marginTop: 14,
+  feedbackRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  feedbackButton: {
     alignSelf: 'flex-start',
   },
-  finalOutputError: {
-    marginTop: 10,
+  feedbackConfirmed: {
     fontSize: 13,
-    color: '#B91C1C',
-    lineHeight: 20,
+    color: '#14B8A6',
+    fontWeight: '600',
   },
 });

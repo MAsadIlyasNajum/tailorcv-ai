@@ -35,6 +35,17 @@ jest.mock('react-native-paper', () => {
   };
 });
 
+jest.mock('react-native-safe-area-context', () => {
+  const ReactMock = require('react');
+  const {View: MockView} = require('react-native');
+  return {
+    SafeAreaView: ({children}: {children?: React.ReactNode}) =>
+      ReactMock.createElement(MockView, null, children),
+    SafeAreaProvider: ({children}: {children?: React.ReactNode}) =>
+      ReactMock.createElement(MockView, null, children),
+  };
+});
+
 import {FinalResumeOutputScreen} from '../src/screens/FinalResumeOutputScreen';
 import {useResumeStore} from '../src/store/useResumeStore';
 
@@ -43,12 +54,16 @@ describe('FinalResumeOutputScreen', () => {
     useResumeStore.getState().clearAll();
   });
 
-  it('renders empty state when no final output exists', () => {
-    const tree = renderer.create(<FinalResumeOutputScreen />).toJSON();
+  it('renders empty state when no final output exists', async () => {
+    let rendererInstance: ReturnType<typeof renderer.create> | null = null;
+    await React.act(() => {
+      rendererInstance = renderer.create(<FinalResumeOutputScreen />);
+    });
+    const tree = rendererInstance!.toJSON();
     expect(JSON.stringify(tree)).toContain('No final output available yet.');
   });
 
-  it('renders polished sections when final output exists', () => {
+  it('renders polished sections when final output exists', async () => {
     useResumeStore.getState().setFinalResumeOutput({
       id: 'final-3',
       analysisId: 'analysis-3',
@@ -66,8 +81,11 @@ describe('FinalResumeOutputScreen', () => {
       createdAt: Date.now(),
     });
 
-    const tree = renderer.create(<FinalResumeOutputScreen />).toJSON();
-    const serialized = JSON.stringify(tree);
+    let rendererInstance: ReturnType<typeof renderer.create> | null = null;
+    await React.act(() => {
+      rendererInstance = renderer.create(<FinalResumeOutputScreen />);
+    });
+    const serialized = JSON.stringify(rendererInstance!.toJSON());
 
     expect(serialized).toContain('Refined Summary');
     expect(serialized).toContain('Prioritized Keywords');

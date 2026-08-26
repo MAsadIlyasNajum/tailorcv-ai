@@ -50,10 +50,6 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
             onPress={() => navigation.navigate(ROUTES.EXPERIENCE_EDITOR)}
           />
           <PrimaryButton
-            label="Start Analysis"
-            onPress={() => navigation.navigate(ROUTES.JOB_DESCRIPTION)}
-          />
-          <PrimaryButton
             label="Settings"
             onPress={() => navigation.navigate(ROUTES.SETTINGS)}
           />
