@@ -96,7 +96,14 @@ export const JobDescriptionScreen = (): React.JSX.Element => {
           <Text style={styles.helper}>Paste a full job description, including responsibilities, qualifications, and preferred skills.</Text>
         ) : null}
 
-        {analysisError ? <Text style={styles.error}>{analysisError}</Text> : null}
+        {analysisError ? (
+          <View style={styles.errorRow}>
+            <Text style={styles.error}>{analysisError}</Text>
+            <Button mode="text" onPress={handleAnalyze}>
+              Try Again
+            </Button>
+          </View>
+        ) : null}
 
         <PrimaryButton
           label={isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
@@ -159,5 +166,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#B91C1C',
     lineHeight: 20,
+  },
+  errorRow: {
+    gap: 8,
+    alignItems: 'center',
   },
 });

@@ -33,6 +33,7 @@ export interface AnalysisResult {
   company?: string;
   jobDescription: string;
   matchScore: number;
+  matchingKeywords: string[];
   missingKeywords: string[];
   suggestedSummary: string;
   suggestedSkills: string[];

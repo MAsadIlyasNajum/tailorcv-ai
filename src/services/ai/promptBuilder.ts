@@ -30,6 +30,7 @@ Rules:
 Return JSON with this exact structure:
 {
   "matchScore": 0,
+  "matchingKeywords": [],
   "missingKeywords": [],
   "suggestedSummary": "",
   "suggestedSkills": [],

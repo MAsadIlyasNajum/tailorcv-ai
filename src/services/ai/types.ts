@@ -1,24 +1,7 @@
-export interface AnalysisResult {
-  id: string;
-  resumeId: string;
-  jobTitle?: string;
-  company?: string;
-  jobDescription: string;
-  matchScore: number;
-  missingKeywords: string[];
-  suggestedSummary: string;
-  suggestedSkills: string[];
-  experienceImprovements: Array<{
-    original: string;
-    improved: string;
-  }>;
-  atsTips: string[];
-  createdAt: number;
-}
-
 export interface GeminiResponseContract {
   matchScore: number;
   missingKeywords: string[];
+  matchingKeywords: string[];
   suggestedSummary: string;
   suggestedSkills: string[];
   experienceImprovements: Array<{

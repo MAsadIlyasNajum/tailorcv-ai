@@ -1,4 +1,5 @@
-import type {AnalysisResult, GeminiResponseContract} from './types';
+import type {AnalysisResult} from '../../types/resume';
+import type {GeminiResponseContract} from './types';
 
 const normalizeStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) {
@@ -67,6 +68,7 @@ export const parseAnalysisResponse = (
   }
 
   const missingKeywords = normalizeStringArray(candidate.missingKeywords);
+  const matchingKeywords = normalizeStringArray(candidate.matchingKeywords);
   const suggestedSkills = normalizeStringArray(candidate.suggestedSkills);
   const atsTips = normalizeStringArray(candidate.atsTips);
   const suggestedSummary =
@@ -85,6 +87,7 @@ export const parseAnalysisResponse = (
   return {
     matchScore: Math.round(matchScore),
     missingKeywords,
+    matchingKeywords,
     suggestedSummary,
     suggestedSkills,
     experienceImprovements,
@@ -106,6 +109,7 @@ export const createAnalysisResult = (
     jobTitle: undefined,
     company: undefined,
     matchScore: Math.max(0, Math.min(100, Math.round(payload.matchScore))),
+    matchingKeywords: payload.matchingKeywords.slice(0, 25),
     missingKeywords: payload.missingKeywords.slice(0, 25),
     suggestedSummary: payload.suggestedSummary.trim(),
     suggestedSkills: payload.suggestedSkills.slice(0, 25),

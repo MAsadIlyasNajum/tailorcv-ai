@@ -7,6 +7,7 @@ import {useResumeStore} from '../store/useResumeStore';
 
 const EMPTY_RESULT = {
   matchScore: 0,
+  matchingKeywords: [],
   missingKeywords: [],
   suggestedSummary: 'No analysis available yet.',
   suggestedSkills: [],
@@ -24,6 +25,7 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
     if (result) {
       return {
         matchScore: Math.max(0, Math.min(100, result.matchScore ?? 0)),
+        matchingKeywords: result.matchingKeywords ?? [],
         missingKeywords: result.missingKeywords ?? [],
         suggestedSummary: result.suggestedSummary ?? 'No summary available.',
         suggestedSkills: result.suggestedSkills ?? [],
@@ -65,7 +67,22 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
         </Card>
 
         <Card style={styles.card}>
-          <Card.Title title="Missing Keywords" />
+          <Card.Title title="What matches" />
+          <Card.Content style={styles.chipsRow}>
+            {viewModel.matchingKeywords.length ? (
+              viewModel.matchingKeywords.map(keyword => (
+                <Chip key={keyword} compact>
+                  {keyword}
+                </Chip>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No matching keywords identified.</Text>
+            )}
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.card}>
+          <Card.Title title="What you're missing" />
           <Card.Content style={styles.chipsRow}>
             {viewModel.missingKeywords.length ? (
               viewModel.missingKeywords.map(keyword => (
