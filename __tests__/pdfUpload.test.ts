@@ -1,9 +1,10 @@
-jest.mock('react-native-document-picker', () => ({
+jest.mock('@react-native-documents/picker', () => ({
   __esModule: true,
   default: {
     pickSingle: jest.fn(),
   },
-  isCancel: jest.fn((error: unknown) => Boolean((error as {code?: string})?.code === 'USER_CANCELED')),
+  isErrorWithCode: jest.fn(),
+  keepLocalCopy: jest.fn(),
   types: {
     pdf: 'com.adobe.pdf',
   },

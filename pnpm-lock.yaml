@@ -26,9 +26,9 @@ importers:
       react-native-blob-util:
         specifier: ^0.24.10
         version: 0.24.10(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@react-native/metro-config@0.84.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
-      react-native-config:
-        specifier: ^1.6.1
-        version: 1.6.1(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@react-native/metro-config@0.84.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
+      react-native-dotenv:
+        specifier: ^4.1.1
+        version: 4.1.1
       react-native-gesture-handler:
         specifier: ^3.1.0
         version: 3.2.1(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@react-native/metro-config@0.84.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
@@ -1721,6 +1721,10 @@ packages:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
 
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
+    engines: {node: '>=12'}
+
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -3057,15 +3061,8 @@ packages:
       react: '*'
       react-native: '*'
 
-  react-native-config@1.6.1:
-    resolution: {integrity: sha512-HvKtxr6/Tq3iMdFx5REYZsjCtPi0RxQOMCs15+DqrUPTNFtWHuEuh+zw7fJp+dmuO79YMfdtlsPWIGTHtaXwjg==}
-    peerDependencies:
-      react: '*'
-      react-native: '*'
-      react-native-windows: '>=0.61'
-    peerDependenciesMeta:
-      react-native-windows:
-        optional: true
+  react-native-dotenv@4.1.1:
+    resolution: {integrity: sha512-Y7aMj6uFa/KJO7AFbUYGvr1YXYlFrVIC0HVhB+mFw2yGgtDrWvnfrpXP7LHX4Zh+xOwsnlZTHOoNrhv/uE9AcA==}
 
   react-native-gesture-handler@3.2.1:
     resolution: {integrity: sha512-VEWscxUN29aeccbD2McF0LSXrwOhSdisaSRFiEWg0O/3WrVghNJp/tOtLrCgzb9gfcZ3xdA+K2Sp8F5G3iHx/Q==}
@@ -5942,6 +5939,8 @@ snapshots:
     dependencies:
       esutils: 2.0.3
 
+  dotenv@17.4.2: {}
+
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -7656,10 +7655,9 @@ snapshots:
       react: 19.2.3
       react-native: 0.84.1(@babel/core@7.29.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@react-native/metro-config@0.84.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3)
 
-  react-native-config@1.6.1(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@react-native/metro-config@0.84.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3):
+  react-native-dotenv@4.1.1:
     dependencies:
-      react: 19.2.3
-      react-native: 0.84.1(@babel/core@7.29.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@react-native/metro-config@0.84.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3)
+      dotenv: 17.4.2
 
   react-native-gesture-handler@3.2.1(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@15.0.1(typescript@5.0.4))(@react-native/metro-config@0.84.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3):
     dependencies:

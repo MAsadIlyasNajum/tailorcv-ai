@@ -6,7 +6,6 @@ const defaultConfig = getDefaultConfig(__dirname);
 
 const config = {
   resolver: {
-    sourceExts: [...defaultConfig.resolver.sourceExts, 'mjs'],
     extraNodeModules: {
       semver: path.resolve(
         __dirname,

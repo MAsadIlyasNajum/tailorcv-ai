@@ -59,12 +59,13 @@ jest.mock('react-native-mmkv', () => ({
   }),
 }));
 
-jest.mock('react-native-document-picker', () => ({
+jest.mock('@react-native-documents/picker', () => ({
   __esModule: true,
   default: {
     pickSingle: jest.fn(),
   },
-  isCancel: jest.fn((error: unknown) => Boolean((error as {code?: string})?.code === 'USER_CANCELED')),
+  isErrorWithCode: jest.fn(),
+  keepLocalCopy: jest.fn(),
   types: {
     pdf: 'com.adobe.pdf',
   },
@@ -79,19 +80,9 @@ jest.mock('react-native-blob-util', () => ({
   },
 }));
 
-jest.mock('react-native-config', () => ({
-  __esModule: true,
-  default: {
-    GEMINI_API_KEY: 'test-api-key',
-  },
-}));
-
-jest.mock('react-native-pdf-text-extractor', () => ({
-  __esModule: true,
-  extractText: jest.fn(async () => ''),
-  getPageCount: jest.fn(async () => 1),
-  extractAllText: jest.fn(async () => ['']),
-  extractPageText: jest.fn(async () => ''),
+jest.mock('react-native-dotenv', () => ({
+  GEMINI_API_KEY: 'test-api-key',
+  APP_ENV: 'test',
 }));
 
 import App from '../App';
