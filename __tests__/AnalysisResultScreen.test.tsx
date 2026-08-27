@@ -67,6 +67,7 @@ const SAMPLE_RESULT = {
   resumeId: 'resume-1',
   jobDescription: 'Job description text',
   matchScore: 88,
+  matchingKeywords: ['React Native', 'TypeScript'],
   missingKeywords: ['Performance Profiling', 'Render performance'],
   suggestedSummary: 'A suggested professional summary.',
   suggestedSkills: ['React Native', 'TypeScript'],

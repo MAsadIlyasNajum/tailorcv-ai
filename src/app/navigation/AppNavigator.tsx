@@ -3,7 +3,9 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {ROUTES} from '../../constants/routes';
 import {AnalysisResultScreen} from '../../screens/AnalysisResultScreen';
-import {ExperienceEditorScreen} from '../../screens/ExperienceEditorScreen';
+// TODO(MVP2): Reintroduce Professional Experience as part of the
+// Resume Editor / Resume Builder workflow.
+// import {ExperienceEditorScreen} from '../../screens/ExperienceEditorScreen';
 import {FinalResumeOutputScreen} from '../../screens/FinalResumeOutputScreen';
 import {HomeScreen} from '../../screens/HomeScreen';
 import {JobDescriptionScreen} from '../../screens/JobDescriptionScreen';
@@ -14,7 +16,8 @@ export type AppStackParamList = {
   [ROUTES.HOME]: undefined;
   [ROUTES.UPLOAD_RESUME]: undefined;
   [ROUTES.JOB_DESCRIPTION]: undefined;
-  [ROUTES.EXPERIENCE_EDITOR]: undefined;
+  // TODO(MVP2): Reintroduce when Resume Builder is available.
+  // [ROUTES.EXPERIENCE_EDITOR]: undefined;
   [ROUTES.ANALYSIS_RESULT]: undefined;
   [ROUTES.FINAL_RESUME_OUTPUT]: undefined;
   [ROUTES.SETTINGS]: undefined;
@@ -42,11 +45,12 @@ export const AppNavigator = (): React.JSX.Element => {
         component={JobDescriptionScreen}
         options={{title: 'Job Description'}}
       />
-      <Stack.Screen
+      {/* TODO(MVP2): Reintroduce when Resume Builder is available. */}
+      {/* <Stack.Screen
         name={ROUTES.EXPERIENCE_EDITOR}
         component={ExperienceEditorScreen}
         options={{title: 'Professional Experience'}}
-      />
+      /> */}
       <Stack.Screen
         name={ROUTES.ANALYSIS_RESULT}
         component={AnalysisResultScreen}

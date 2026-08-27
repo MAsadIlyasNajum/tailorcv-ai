@@ -12,14 +12,33 @@ import type {AppStackParamList} from '../app/navigation/AppNavigator';
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.HOME>;
 
 export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
+  const resumeText = useResumeStore(state => state.resumeText);
+  const resumeMetadata = useResumeStore(state => state.resumeMetadata);
+  const jobDescription = useResumeStore(state => state.jobDescription);
   const analysisResult = useResumeStore(state => state.analysisResult);
 
-  const summaryText = useMemo(() => {
+  const hasResume = Boolean(resumeText.trim());
+  const hasJobDescription = Boolean(jobDescription.trim());
+  const canAnalyze = hasResume && hasJobDescription;
+
+  const resumeStatusLabel = useMemo(() => {
+    if (!hasResume) {
+      return 'No resume uploaded yet.';
+    }
+
+    if (resumeMetadata?.name) {
+      return `✓ ${resumeMetadata.name}`;
+    }
+
+    return '✓ Resume text added';
+  }, [hasResume, resumeMetadata?.name]);
+
+  const latestAnalysisLabel = useMemo(() => {
     if (!analysisResult) {
       return 'No analysis yet. Upload your resume and paste a job description to get started.';
     }
 
-    return `Score: ${analysisResult.matchScore}% | Missing keywords: ${analysisResult.missingKeywords.length}`;
+    return `${analysisResult.matchScore}% Match • ${analysisResult.missingKeywords.length} missing keywords`;
   }, [analysisResult]);
 
   return (
@@ -27,31 +46,48 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
       <View style={styles.wrapper}>
         <Card style={styles.logoCard}>
           <Card.Content>
-            <Text style={styles.logoTitle}>
-              TailorCV AI
-            </Text>
+            <Text style={styles.logoTitle}>TailorCV AI</Text>
             <Text style={styles.logoSubtitle}>
-              ATS-optimized resume tailoring assistant
+              Tailor your resume for your next job.
             </Text>
           </Card.Content>
         </Card>
 
         <View style={styles.actions}>
           <PrimaryButton
-            label="Upload Resume"
+            label={hasResume ? 'Replace Resume' : 'Upload Resume'}
             onPress={() => navigation.navigate(ROUTES.UPLOAD_RESUME)}
           />
+
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Resume</Text>
+            <Text style={[styles.statusValue, hasResume && styles.statusValueActive]}>
+              {resumeStatusLabel}
+            </Text>
+          </View>
+
           <PrimaryButton
             label="Paste Job Description"
             onPress={() => navigation.navigate(ROUTES.JOB_DESCRIPTION)}
           />
+
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Job Description</Text>
+            <Text
+              style={[
+                styles.statusValue,
+                hasJobDescription && styles.statusValueActive,
+              ]}>
+              {hasJobDescription
+                ? `${jobDescription.length} characters pasted`
+                : 'Not pasted yet'}
+            </Text>
+          </View>
+
           <PrimaryButton
-            label="Professional Experience"
-            onPress={() => navigation.navigate(ROUTES.EXPERIENCE_EDITOR)}
-          />
-          <PrimaryButton
-            label="Settings"
-            onPress={() => navigation.navigate(ROUTES.SETTINGS)}
+            label="Analyze Resume"
+            onPress={() => navigation.navigate(ROUTES.JOB_DESCRIPTION)}
+            disabled={!canAnalyze}
           />
         </View>
 
@@ -60,7 +96,14 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
         <Card style={styles.resultCard}>
           <Card.Title title="Latest Analysis" />
           <Card.Content>
-            <Text style={styles.summaryText}>{summaryText}</Text>
+            <Text style={styles.summaryText}>{latestAnalysisLabel}</Text>
+            {analysisResult ? (
+              <PrimaryButton
+                label="View Results"
+                onPress={() => navigation.navigate(ROUTES.ANALYSIS_RESULT)}
+                fullWidth={false}
+              />
+            ) : null}
           </Card.Content>
         </Card>
       </View>
@@ -88,6 +131,25 @@ const styles = StyleSheet.create({
   actions: {
     gap: 12,
   },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  statusLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  statusValue: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  statusValueActive: {
+    color: '#16A34A',
+    fontWeight: '600',
+  },
   divider: {
     marginVertical: 2,
   },
@@ -98,5 +160,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#334155',
     lineHeight: 20,
+    marginBottom: 12,
   },
 });

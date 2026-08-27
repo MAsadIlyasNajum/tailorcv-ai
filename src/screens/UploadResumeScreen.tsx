@@ -21,6 +21,7 @@ export const UploadResumeScreen = (): React.JSX.Element => {
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [pastedResume, setPastedResume] = useState('');
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [showExtractedText, setShowExtractedText] = useState(false);
 
   const fileSizeLabel = useMemo(() => {
     if (!resumeMetadata) {
@@ -134,10 +135,23 @@ export const UploadResumeScreen = (): React.JSX.Element => {
               <Text style={styles.errorText}>{extractionError}</Text>
             ) : null}
 
-            <Text style={styles.label}>Extracted resume text preview</Text>
-            <Text style={styles.preview}>
-              {resumeText || 'No extracted text available yet. Select a PDF to begin.'}
-            </Text>
+            {resumeText ? (
+              <View style={styles.extractedSection}>
+                <Text style={styles.extractedHeader}>Resume successfully processed.</Text>
+                <PrimaryButton
+                  label={showExtractedText ? 'Hide extracted text' : 'View extracted text'}
+                  onPress={() => setShowExtractedText(value => !value)}
+                  fullWidth={false}
+                />
+                {showExtractedText ? (
+                  <Text style={styles.extractedPreview}>{resumeText}</Text>
+                ) : null}
+              </View>
+            ) : (
+              <Text style={styles.hintText}>
+                Select a PDF or paste your resume text above to begin.
+              </Text>
+            )}
           </Card.Content>
         </Card>
       </View>
@@ -174,12 +188,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
   },
-  preview: {
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 8,
-    color: '#334155',
-  },
   pasteInput: {
     backgroundColor: '#FFFFFF',
     minHeight: 160,
@@ -188,5 +196,26 @@ const styles = StyleSheet.create({
     minHeight: 160,
     paddingTop: 12,
     paddingBottom: 12,
+  },
+  extractedSection: {
+    marginTop: 12,
+    gap: 8,
+  },
+  extractedHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#16A34A',
+  },
+  extractedPreview: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#334155',
+    marginTop: 8,
+  },
+  hintText: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 20,
+    marginTop: 8,
   },
 });

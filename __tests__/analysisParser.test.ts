@@ -5,10 +5,11 @@ import {
 
 describe('analysisParser', () => {
   it('parses a valid JSON payload and normalizes fields', () => {
-    const parsed = parseAnalysisResponse(`\n\`\`\`json\n{\n  "matchScore": 87.4,\n  "missingKeywords": ["TypeScript", "  React Native  "],\n  "suggestedSummary": "  Product-focused mobile engineer. ",\n  "suggestedSkills": ["Zustand", "Testing"],\n  "experienceImprovements": [\n    {"original": "Built app", "improved": "Built a React Native app used by 10k users"}\n  ],\n  "atsTips": ["Use standard section headings"]\n}\n\`\`\``);
+    const parsed = parseAnalysisResponse(`\n\`\`\`json\n{\n  "matchScore": 87.4,\n  "matchingKeywords": ["React Native", "TypeScript"],\n  "missingKeywords": ["TypeScript", "  React Native  "],\n  "suggestedSummary": "  Product-focused mobile engineer. ",\n  "suggestedSkills": ["Zustand", "Testing"],\n  "experienceImprovements": [\n    {"original": "Built app", "improved": "Built a React Native app used by 10k users"}\n  ],\n  "atsTips": ["Use standard section headings"]\n}\n\`\`\``);
 
     expect(parsed).toMatchObject({
       matchScore: 87,
+      matchingKeywords: ['React Native', 'TypeScript'],
       missingKeywords: ['TypeScript', 'React Native'],
       suggestedSummary: 'Product-focused mobile engineer.',
       suggestedSkills: ['Zustand', 'Testing'],
@@ -27,6 +28,7 @@ describe('analysisParser', () => {
       parseAnalysisResponse(
         JSON.stringify({
           matchScore: 130,
+          matchingKeywords: [],
           missingKeywords: [],
           suggestedSummary: 'Summary',
           suggestedSkills: [],
@@ -41,6 +43,7 @@ describe('analysisParser', () => {
     const result = createAnalysisResult(
       {
         matchScore: 99,
+        matchingKeywords: new Array(30).fill('keyword'),
         missingKeywords: new Array(30).fill('keyword'),
         suggestedSummary: 'Strong summary',
         suggestedSkills: new Array(30).fill('skill'),
@@ -55,6 +58,7 @@ describe('analysisParser', () => {
     );
 
     expect(result.matchScore).toBe(99);
+    expect(result.matchingKeywords).toHaveLength(25);
     expect(result.missingKeywords).toHaveLength(25);
     expect(result.suggestedSkills).toHaveLength(25);
     expect(result.experienceImprovements).toHaveLength(5);
