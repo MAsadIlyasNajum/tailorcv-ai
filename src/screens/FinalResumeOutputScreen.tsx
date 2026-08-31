@@ -1,13 +1,16 @@
-import React from 'react';
-import {Alert, Clipboard, StyleSheet, Text, View} from 'react-native';
-import {Button, Card, Chip} from 'react-native-paper';
+import React, {useState} from 'react';
+import {Alert, Clipboard, Share, StyleSheet, Text, View} from 'react-native';
+import {AppButton, AppCard, AppChip} from '../components';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ScreenContainer} from '../components/common/ScreenContainer';
+import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ROUTES} from '../constants/routes';
 import {useResumeStore} from '../store/useResumeStore';
+import {trackEvent} from '../services/analytics/analytics';
+import {exportFinalResumeToPdf, sharePdf} from '../services/pdf/pdfGenerator';
 
 export const FinalResumeOutputScreen = (): React.JSX.Element => {
   const navigation =
@@ -18,6 +21,8 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
       >
     >();
   const finalResumeOutput = useResumeStore(state => state.finalResumeOutput);
+  const analysisResults = useResumeStore(state => state.analysisResults);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const handleCopy = (text: string, successMessage: string): void => {
     if (!text.trim()) {
@@ -28,6 +33,75 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
     Alert.alert('Copied', successMessage);
   };
 
+  const handleShare = async (): Promise<void> => {
+    if (!finalResumeOutput) {
+      return;
+    }
+
+    const message = [
+      'Refined Summary',
+      finalResumeOutput.refinedSummary,
+      '',
+      'Prioritized Keywords',
+      finalResumeOutput.prioritizedKeywords.join(', '),
+      '',
+      'Experience Sections',
+      finalResumeOutput.polishedExperienceSections
+        .map(
+          section =>
+            `${section.heading}\n${section.polishedSummary}\n${section.polishedBullets
+              .map(bullet => `- ${bullet}`)
+              .join('\n')}`,
+        )
+        .join('\n\n'),
+    ].join('\n');
+
+    try {
+      await Share.share({message, title: 'TailorCV AI - Final Resume'});
+      trackEvent('final_resume_shared');
+    } catch {
+      // share cancelled or failed silently
+    }
+  };
+
+  const analysis = analysisResults.find(r => r.id === finalResumeOutput?.analysisId);
+
+  const handleExportPdf = async (): Promise<void> => {
+    if (!finalResumeOutput) {
+      return;
+    }
+
+    setIsExportingPdf(true);
+    try {
+      const result = await exportFinalResumeToPdf(
+        finalResumeOutput,
+        analysis?.companyName,
+        analysis?.jobTitle,
+      );
+      trackEvent('pdf_exported');
+      await sharePdf(result.filePath);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not generate PDF.';
+      Alert.alert(
+        'PDF Export Failed',
+        `${message} You can copy the text instead.`,
+        [
+          {text: 'OK'},
+          {
+            text: 'Copy Text',
+            onPress: () => handleCopy(combinedText, 'Full final output copied to clipboard.'),
+          },
+        ],
+      );
+      trackEvent('pdf_export_failed');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   if (!finalResumeOutput) {
     return (
       <ScreenContainer>
@@ -36,9 +110,9 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
           <Text style={styles.emptyBody}>
             Go back to Analysis Result and generate your polished final output.
           </Text>
-          <Button mode="contained" onPress={() => navigation.goBack()}>
+          <AppButton mode="contained" onPress={() => navigation.goBack()}>
             Back to Analysis
-          </Button>
+          </AppButton>
         </View>
       </ScreenContainer>
     );
@@ -71,11 +145,11 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
-        <Card style={styles.card}>
-          <Card.Title title="Refined Summary" />
-          <Card.Content>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Refined Summary" />
+          <AppCard.Content>
             <Text style={styles.summary}>{finalResumeOutput.refinedSummary}</Text>
-            <Button
+            <AppButton
               mode="text"
               style={styles.copyButton}
               onPress={() =>
@@ -85,24 +159,24 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
                 )
               }>
               Copy summary
-            </Button>
-          </Card.Content>
-        </Card>
+            </AppButton>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Prioritized Keywords" />
-          <Card.Content style={styles.chipsRow}>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Prioritized Keywords" />
+          <AppCard.Content style={styles.chipsRow}>
             {finalResumeOutput.prioritizedKeywords.map(keyword => (
-              <Chip key={keyword} compact>
+              <AppChip key={keyword} compact>
                 {keyword}
-              </Chip>
+              </AppChip>
             ))}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Polished Experience Sections" />
-          <Card.Content style={styles.sectionList}>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Polished Experience Sections" />
+          <AppCard.Content style={styles.sectionList}>
             {finalResumeOutput.polishedExperienceSections.map(section => (
               <View key={section.heading} style={styles.sectionBlock}>
                 <Text style={styles.sectionHeading}>{section.heading}</Text>
@@ -114,23 +188,23 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
                 ))}
               </View>
             ))}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Final Recommendations" />
-          <Card.Content>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Final Recommendations" />
+          <AppCard.Content>
             {finalResumeOutput.finalRecommendations.map((item, index) => (
               <Text key={`${item}-${index}`} style={styles.bulletText}>
                 • {item}
               </Text>
             ))}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Cautions" />
-          <Card.Content>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Cautions" />
+          <AppCard.Content>
             {finalResumeOutput.cautions.length ? (
               finalResumeOutput.cautions.map((item, index) => (
                 <Text key={`${item}-${index}`} style={styles.cautionText}>
@@ -140,16 +214,30 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
             ) : (
               <Text style={styles.emptyBody}>No cautions were returned.</Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Button
+        <View style={styles.buttonRow}>
+          <PrimaryButton
+            label="Export PDF"
+            onPress={handleExportPdf}
+            loading={isExportingPdf}
+            disabled={isExportingPdf}
+            fullWidth={false}
+          />
+          <PrimaryButton
+            label="Share"
+            onPress={handleShare}
+            fullWidth={false}
+          />
+        </View>
+        <AppButton
           mode="contained"
           onPress={() =>
             handleCopy(combinedText, 'Full final output package copied to clipboard.')
           }>
           Copy full package
-        </Button>
+        </AppButton>
       </View>
     </ScreenContainer>
   );
@@ -222,5 +310,10 @@ const styles = StyleSheet.create({
     color: '#475569',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
   },
 });

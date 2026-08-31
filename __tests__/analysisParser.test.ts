@@ -9,8 +9,14 @@ describe('analysisParser', () => {
 
     expect(parsed).toMatchObject({
       matchScore: 87,
-      matchingKeywords: ['React Native', 'TypeScript'],
-      missingKeywords: ['TypeScript', 'React Native'],
+      matchingKeywords: [
+        {term: 'React Native', importance: 'important'},
+        {term: 'TypeScript', importance: 'important'},
+      ],
+      missingKeywords: [
+        {term: 'TypeScript', importance: 'important'},
+        {term: 'React Native', importance: 'important'},
+      ],
       suggestedSummary: 'Product-focused mobile engineer.',
       suggestedSkills: ['Zustand', 'Testing'],
       experienceImprovements: [
@@ -43,8 +49,8 @@ describe('analysisParser', () => {
     const result = createAnalysisResult(
       {
         matchScore: 99,
-        matchingKeywords: new Array(30).fill('keyword'),
-        missingKeywords: new Array(30).fill('keyword'),
+        matchingKeywords: new Array(30).fill({term: 'keyword', importance: 'important'}),
+        missingKeywords: new Array(30).fill({term: 'keyword', importance: 'important'}),
         suggestedSummary: 'Strong summary',
         suggestedSkills: new Array(30).fill('skill'),
         experienceImprovements: new Array(8).fill({
@@ -55,6 +61,7 @@ describe('analysisParser', () => {
       },
       'resume text',
       'job description',
+      'app-1',
     );
 
     expect(result.matchScore).toBe(99);

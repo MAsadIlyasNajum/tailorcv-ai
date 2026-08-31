@@ -1,4 +1,4 @@
-import type {AnalysisResult} from '../../types/resume';
+import type {AnalysisResult, KeywordImportance, KeywordWithImportance} from '../../types/resume';
 import type {GeminiResponseContract} from './types';
 
 const normalizeStringArray = (value: unknown): string[] => {
@@ -10,6 +10,31 @@ const normalizeStringArray = (value: unknown): string[] => {
     .filter(item => typeof item === 'string')
     .map(item => item.trim())
     .filter(Boolean);
+};
+
+const normalizeKeywordsWithImportance = (value: unknown): KeywordWithImportance[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const validImportances: KeywordImportance[] = ['required', 'important', 'nice-to-have'];
+
+  return value
+    .map(item => {
+      if (typeof item === 'string') {
+        return {term: item.trim(), importance: 'important' as KeywordImportance};
+      }
+      if (item && typeof item === 'object') {
+        const candidate = item as Record<string, unknown>;
+        const term = typeof candidate.term === 'string' ? candidate.term.trim() : '';
+        const importance = validImportances.includes(candidate.importance as KeywordImportance)
+          ? (candidate.importance as KeywordImportance)
+          : 'important';
+        return {term, importance};
+      }
+      return null;
+    })
+    .filter((item): item is KeywordWithImportance => item !== null && item.term.length > 0);
 };
 
 const normalizeExperienceImprovements = (
@@ -67,8 +92,8 @@ export const parseAnalysisResponse = (
     throw new Error('The AI returned an invalid ATS score.');
   }
 
-  const missingKeywords = normalizeStringArray(candidate.missingKeywords);
-  const matchingKeywords = normalizeStringArray(candidate.matchingKeywords);
+  const missingKeywords = normalizeKeywordsWithImportance(candidate.missingKeywords);
+  const matchingKeywords = normalizeKeywordsWithImportance(candidate.matchingKeywords);
   const suggestedSkills = normalizeStringArray(candidate.suggestedSkills);
   const atsTips = normalizeStringArray(candidate.atsTips);
   const suggestedSummary =
@@ -99,22 +124,32 @@ export const createAnalysisResult = (
   payload: GeminiResponseContract,
   resumeText: string,
   jobDescription: string,
+  jobApplicationId?: string,
 ): AnalysisResult => {
   const resumeId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const normalizeKeyword = (item: string | KeywordWithImportance): KeywordWithImportance => {
+    if (typeof item === 'string') {
+      return {term: item, importance: 'important'};
+    }
+    return item;
+  };
 
   return {
     id: `${resumeId}-analysis`,
     resumeId,
+    jobApplicationId: jobApplicationId ?? '',
     jobDescription,
     jobTitle: undefined,
-    company: undefined,
+    companyName: undefined,
     matchScore: Math.max(0, Math.min(100, Math.round(payload.matchScore))),
-    matchingKeywords: payload.matchingKeywords.slice(0, 25),
-    missingKeywords: payload.missingKeywords.slice(0, 25),
+    matchingKeywords: payload.matchingKeywords.map(normalizeKeyword).slice(0, 25),
+    missingKeywords: payload.missingKeywords.map(normalizeKeyword).slice(0, 25),
     suggestedSummary: payload.suggestedSummary.trim(),
     suggestedSkills: payload.suggestedSkills.slice(0, 25),
     experienceImprovements: payload.experienceImprovements.slice(0, 5),
     atsTips: payload.atsTips.slice(0, 10),
     createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
 };

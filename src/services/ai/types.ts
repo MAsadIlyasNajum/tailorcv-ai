@@ -1,7 +1,9 @@
+import type {KeywordWithImportance} from '../../types/resume';
+
 export interface GeminiResponseContract {
   matchScore: number;
-  missingKeywords: string[];
-  matchingKeywords: string[];
+  missingKeywords: Array<KeywordWithImportance | string>;
+  matchingKeywords: Array<KeywordWithImportance | string>;
   suggestedSummary: string;
   suggestedSkills: string[];
   experienceImprovements: Array<{

@@ -13,40 +13,10 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     goBack: jest.fn(),
   }),
+  useRoute: () => ({
+    params: {},
+  }),
 }));
-
-jest.mock('react-native-paper', () => {
-  const ReactMock = require('react');
-  const {Text: MockText, View: MockView} = require('react-native');
-  const Card = ({children}: {children?: React.ReactNode}) =>
-    ReactMock.createElement(MockView, null, children);
-
-  Card.Title = ({
-    title,
-    subtitle,
-  }: {
-    title: string;
-    subtitle?: string;
-  }) =>
-    ReactMock.createElement(
-      MockView,
-      null,
-      ReactMock.createElement(MockText, null, title),
-      subtitle
-        ? ReactMock.createElement(MockText, null, subtitle)
-        : null,
-    );
-  Card.Content = ({children}: {children?: React.ReactNode}) =>
-    ReactMock.createElement(MockView, null, children);
-
-  return {
-    Button: ({children}: {children?: React.ReactNode}) =>
-      ReactMock.createElement(MockText, null, children),
-    Chip: ({children}: {children?: React.ReactNode}) =>
-      ReactMock.createElement(MockText, null, children),
-    Card,
-  };
-});
 
 jest.mock('react-native-safe-area-context', () => {
   const ReactMock = require('react');
@@ -65,10 +35,17 @@ import {useResumeStore} from '../src/store/useResumeStore';
 const SAMPLE_RESULT = {
   id: 'analysis-1',
   resumeId: 'resume-1',
+  jobApplicationId: 'app-1',
   jobDescription: 'Job description text',
   matchScore: 88,
-  matchingKeywords: ['React Native', 'TypeScript'],
-  missingKeywords: ['Performance Profiling', 'Render performance'],
+  matchingKeywords: [
+    {term: 'React Native', importance: 'required'},
+    {term: 'TypeScript', importance: 'important'},
+  ],
+  missingKeywords: [
+    {term: 'Performance Profiling', importance: 'nice-to-have'},
+    {term: 'Render performance', importance: 'important'},
+  ],
   suggestedSummary: 'A suggested professional summary.',
   suggestedSkills: ['React Native', 'TypeScript'],
   experienceImprovements: [
@@ -79,6 +56,7 @@ const SAMPLE_RESULT = {
   ],
   atsTips: ['Tip one.', 'Tip two.'],
   createdAt: Date.now(),
+  updatedAt: Date.now(),
 };
 
 describe('AnalysisResultScreen', () => {
@@ -86,8 +64,9 @@ describe('AnalysisResultScreen', () => {
     useResumeStore.getState().clearAll();
   });
 
-  it('renders the ATS score with an explanation and no final output button', async () => {
-    useResumeStore.getState().setAnalysisResult(SAMPLE_RESULT);
+  it('renders the ATS score with explanation and generate button', async () => {
+    useResumeStore.getState().addAnalysisResult(SAMPLE_RESULT);
+    useResumeStore.getState().setCurrentAnalysis(SAMPLE_RESULT.id);
 
     let rendererInstance: ReturnType<typeof renderer.create> | null = null;
     await React.act(() => {
@@ -95,17 +74,16 @@ describe('AnalysisResultScreen', () => {
     });
     const serialized = JSON.stringify(rendererInstance!.toJSON());
 
-    expect(serialized).toContain('ATS Match Score');
+    expect(serialized).toContain('Resume Match');
     expect(serialized).toContain('88');
-    expect(serialized).toContain(
-      'AI-estimated match based on how closely your resume',
-    );
-    expect(serialized).toContain('Applicant Tracking System');
-    expect(serialized).not.toContain('Generate Final Resume Output');
+    expect(serialized).toContain('Keyword coverage is weighted by importance');
+    expect(serialized).toContain('Keyword Coverage');
+    expect(serialized).toContain('Generate Tailored Resume');
   });
 
   it('does not render the professional experience recommendations card', async () => {
-    useResumeStore.getState().setAnalysisResult(SAMPLE_RESULT);
+    useResumeStore.getState().addAnalysisResult(SAMPLE_RESULT);
+    useResumeStore.getState().setCurrentAnalysis(SAMPLE_RESULT.id);
 
     let rendererInstance: ReturnType<typeof renderer.create> | null = null;
     await React.act(() => {
@@ -120,7 +98,8 @@ describe('AnalysisResultScreen', () => {
   });
 
   it('renders the usefulness signal when a result exists', async () => {
-    useResumeStore.getState().setAnalysisResult(SAMPLE_RESULT);
+    useResumeStore.getState().addAnalysisResult(SAMPLE_RESULT);
+    useResumeStore.getState().setCurrentAnalysis(SAMPLE_RESULT.id);
 
     let rendererInstance: ReturnType<typeof renderer.create> | null = null;
     await React.act(() => {

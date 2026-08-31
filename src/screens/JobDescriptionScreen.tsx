@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {Button, TextInput} from 'react-native-paper';
+import {AppButton, AppTextInput} from '../components';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
@@ -11,17 +11,32 @@ import {ROUTES} from '../constants/routes';
 import {runResumeAnalysis} from '../services/ai/analyzeResumeUseCase';
 import {useResumeStore} from '../store/useResumeStore';
 import {validateJobDescription} from '../utils/validation/jobDescriptionValidation';
+import {trackEvent} from '../services/analytics/analytics';
 
 export const JobDescriptionScreen = (): React.JSX.Element => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList, typeof ROUTES.JOB_DESCRIPTION>>();
-  const resumeText = useResumeStore(state => state.resumeText);
-  const jobDescription = useResumeStore(state => state.jobDescription);
+  const resumes = useResumeStore(state => state.resumes);
+  const currentResumeId = useResumeStore(state => state.currentResumeId);
+  const jobApplications = useResumeStore(state => state.jobApplications);
+  const currentJobApplicationId = useResumeStore(state => state.currentJobApplicationId);
+  const addJobApplication = useResumeStore(state => state.addJobApplication);
+  const updateJobApplication = useResumeStore(state => state.updateJobApplication);
+  const setCurrentJobApplication = useResumeStore(state => state.setCurrentJobApplication);
   const isAnalyzing = useResumeStore(state => state.isAnalyzing);
   const analysisError = useResumeStore(state => state.analysisError);
-  const setJobDescription = useResumeStore(state => state.setJobDescription);
   const setAnalysisError = useResumeStore(state => state.setAnalysisError);
 
-  const [isFocused, setIsFocused] = useState(false);
+  const currentResume = useMemo(
+    () => resumes.find(r => r.id === currentResumeId) ?? null,
+    [resumes, currentResumeId],
+  );
+  const currentJobApplication = useMemo(
+    () => jobApplications.find(app => app.id === currentJobApplicationId) ?? null,
+    [jobApplications, currentJobApplicationId],
+  );
+
+  const resumeText = currentResume?.text ?? '';
+  const [jobDescription, setJobDescription] = useState(currentJobApplication?.jobDescription ?? '');
 
   const validation = useMemo(
     () => validateJobDescription(jobDescription),
@@ -35,15 +50,40 @@ export const JobDescriptionScreen = (): React.JSX.Element => {
       return;
     }
 
-    const previousResultId = useResumeStore.getState().analysisResult?.id ?? null;
+    trackEvent('analysis_started');
+
+    const previousResultId = useResumeStore.getState().currentAnalysisId;
 
     await runResumeAnalysis();
 
     const nextState = useResumeStore.getState();
-    const nextResultId = nextState.analysisResult?.id ?? null;
+    const nextResultId = nextState.currentAnalysisId;
 
     if (!nextState.analysisError && nextResultId && nextResultId !== previousResultId) {
-      navigation.navigate(ROUTES.ANALYSIS_RESULT);
+      trackEvent('analysis_completed');
+      navigation.navigate(ROUTES.ANALYSIS_RESULT as any);
+    } else if (nextState.analysisError) {
+      trackEvent('analysis_failed');
+    }
+  };
+
+  const handleJobDescriptionChange = (value: string): void => {
+    setJobDescription(value);
+    setAnalysisError(null);
+
+    if (currentJobApplication) {
+      updateJobApplication(currentJobApplication.id, {jobDescription: value});
+    } else if (currentResumeId) {
+      const newApp = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        resumeId: currentResumeId,
+        jobDescription: value,
+        status: 'active' as const,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      addJobApplication(newApp);
+      setCurrentJobApplication(newApp.id);
     }
   };
 
@@ -58,50 +98,52 @@ export const JobDescriptionScreen = (): React.JSX.Element => {
         <View style={styles.headerRow}>
           <Text style={styles.counterText}>{jobDescription.length} chars</Text>
           {jobDescription ? (
-            <Button
+            <AppButton
               mode="text"
               onPress={() => {
                 setJobDescription('');
                 setAnalysisError(null);
+                if (currentJobApplication) {
+                  updateJobApplication(currentJobApplication.id, {jobDescription: ''});
+                }
               }}>
               Clear
-            </Button>
+            </AppButton>
           ) : null}
         </View>
 
-        <TextInput
-          mode="outlined"
+        <AppTextInput
           multiline
           value={jobDescription}
-          onChangeText={value => {
-            setJobDescription(value);
-            setAnalysisError(null);
-          }}
+          onChangeText={handleJobDescriptionChange}
           placeholder="Paste full job description here..."
           numberOfLines={12}
           style={styles.input}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          autoFocus={false}
           autoCapitalize="sentences"
           autoCorrect={true}
-          textAlignVertical="top"
-          contentStyle={styles.inputContent}
         />
 
         {jobDescription && !validation.valid ? (
           <Text style={styles.validation}>{validation.message}</Text>
         ) : null}
 
-        {!jobDescription && !isFocused ? (
+        {!jobDescription ? (
           <Text style={styles.helper}>Paste a full job description, including responsibilities, qualifications, and preferred skills.</Text>
         ) : null}
 
         {analysisError ? (
-          <View style={styles.errorRow}>
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>Analysis Failed</Text>
             <Text style={styles.error}>{analysisError}</Text>
-            <Button mode="text" onPress={handleAnalyze}>
-              Try Again
-            </Button>
+            <View style={styles.errorActions}>
+              <AppButton mode="contained" onPress={handleAnalyze}>
+                Try Again
+              </AppButton>
+              <AppButton mode="outlined" onPress={() => setAnalysisError(null)}>
+                Edit Job Description
+              </AppButton>
+            </View>
           </View>
         ) : null}
 
@@ -166,6 +208,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#B91C1C',
     lineHeight: 20,
+  },
+  errorCard: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#DC2626',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  errorActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+    flexWrap: 'wrap',
   },
   errorRow: {
     gap: 8,

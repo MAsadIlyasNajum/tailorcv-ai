@@ -30,13 +30,18 @@ Rules:
 Return JSON with this exact structure:
 {
   "matchScore": 0,
-  "matchingKeywords": [],
-  "missingKeywords": [],
+  "matchingKeywords": [{"term": "", "importance": "required"}],
+  "missingKeywords": [{"term": "", "importance": "important"}],
   "suggestedSummary": "",
   "suggestedSkills": [],
   "experienceImprovements": [{ "original": "", "improved": "" }],
   "atsTips": []
 }
+
+For each keyword, assign importance based on how prominently it appears in the job description:
+- "required" for must-have qualifications (e.g., "must have", "required", "essential")
+- "important" for preferred qualifications (e.g., "preferred", "desired", "strong")
+- "nice-to-have" for bonus qualifications (e.g., "bonus", "nice to have", "plus")
 
 RESUME:
 ${safeResume}
@@ -165,5 +170,105 @@ ${safeAnalysis}
 
 PROFESSIONAL EXPERIENCE:
 ${safeExperiences}
+`;
+};
+
+export const buildExtractionPrompt = (resumeText: string): string => {
+  const safeResume = resumeText.trim();
+
+  return `You are an expert resume structuring assistant.
+Extract the candidate's resume into a clean, structured JSON representation that EXACTLY matches the schema below.
+
+CRITICAL RULES:
+- Extract ONLY information explicitly present in the resume.
+- DO NOT fabricate names, companies, job titles, dates, degrees, certifications, skills, URLs, or projects.
+- DO NOT invent dates. If a date is not explicitly stated, use null.
+- DO NOT invent URLs, credential IDs, or links.
+- Separate work "experience" entries from "projects" only when the source clearly distinguishes them.
+- Preserve the candidate's exact wording where it is clear and factual.
+- Keep optional fields empty/null when the information is unavailable.
+- If some content does not fit any section (awards, languages, publications, volunteer work, etc.), put it verbatim into "unmapped".
+- For project to experience associations, list 0-based indices of the related experiences in "associatedExperienceIndices" (for example [0, 2]). Only reference indices that exist in the experience list.
+- Use skill groups only when the source provides clear categorization; otherwise put skills in "uncategorized".
+
+Return ONLY valid JSON with this structure:
+{
+  "unmapped": "any leftover/unknown text verbatim, or empty string",
+  "sections": [
+    {
+      "type": "personalInfo",
+      "data": {
+        "fullName": "",
+        "photoUri": "",
+        "emails": [{"value": "name@example.com", "label": "personal"}],
+        "phoneNumbers": [{"value": "+1 555 000 0000", "label": "mobile"}],
+        "addresses": [{"value": "City, Country", "label": "current"}],
+        "links": [{"value": "https://example.com", "label": "GitHub"}]
+      }
+    },
+    {
+      "type": "intro",
+      "data": { "headline": "", "summary": "" }
+    },
+    {
+      "type": "experience",
+      "entries": [
+        {
+          "company": "", "role": "", "employmentType": "", "location": "",
+          "startDate": null, "endDate": null, "isCurrent": false,
+          "summary": "", "responsibilities": [], "achievements": [], "technologies": [],
+          "links": []
+        }
+      ]
+    },
+    {
+      "type": "projects",
+      "entries": [
+        {
+          "name": "", "role": "", "description": "",
+          "startDate": null, "endDate": null,
+          "responsibilities": [], "achievements": [], "technologies": [],
+          "url": "", "githubUrl": "", "demoUrl": "",
+          "associatedExperienceIndices": []
+        }
+      ]
+    },
+    {
+      "type": "education",
+      "entries": [
+        {
+          "institution": "", "degree": "", "fieldOfStudy": "", "location": "",
+          "startDate": null, "endDate": null, "isCurrent": false,
+          "description": "", "achievements": [], "gpa": "",
+          "coursework": [], "activities": [], "url": ""
+        }
+      ]
+    },
+    {
+      "type": "skills",
+      "data": {
+        "uncategorized": ["Skill A", "Skill B"],
+        "groups": [{ "title": "Programming Languages", "skills": ["TypeScript"] }]
+      }
+    },
+    {
+      "type": "certifications",
+      "entries": [
+        {
+          "name": "", "issuer": "", "issueDate": "", "expirationDate": "",
+          "credentialId": "", "credentialUrl": "", "description": ""
+        }
+      ]
+    },
+    {
+      "type": "custom",
+      "title": "Publications",
+      "data": { "content": "", "entries": [{ "title": "", "content": "" }] }
+    }
+  ]
+}
+
+RESUME:
+${safeResume}
 `;
 };

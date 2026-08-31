@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {Alert, StyleSheet, Text, View} from 'react-native';
-import {Card, Divider, TextInput} from 'react-native-paper';
+import {AppCard, AppDivider, AppTextInput} from '../components';
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ScreenContainer} from '../components/common/ScreenContainer';
@@ -8,14 +8,35 @@ import {pickResumePdf} from '../services/pdf/documentPicker';
 import {extractTextFromPdfFile} from '../services/pdf/pdfExtractor';
 import {normalizeResumeText} from '../utils/text/normalizeResumeText';
 import {useResumeStore} from '../store/useResumeStore';
+import {trackEvent} from '../services/analytics/analytics';
 
 const MIN_PASTED_RESUME_LENGTH = 50;
 
 export const UploadResumeScreen = (): React.JSX.Element => {
-  const resumeText = useResumeStore(state => state.resumeText);
-  const resumeMetadata = useResumeStore(state => state.resumeMetadata);
-  const setResumeMetadata = useResumeStore(state => state.setResumeMetadata);
-  const setResumeText = useResumeStore(state => state.setResumeText);
+  const resumes = useResumeStore(state => state.resumes);
+  const currentResumeId = useResumeStore(state => state.currentResumeId);
+  const addResume = useResumeStore(state => state.addResume);
+  const updateResume = useResumeStore(state => state.updateResume);
+  const setCurrentResume = useResumeStore(state => state.setCurrentResume);
+
+  const currentResume = useMemo(
+    () => resumes.find(r => r.id === currentResumeId) ?? null,
+    [resumes, currentResumeId],
+  );
+
+  const resumeText = currentResume?.text ?? '';
+  const resumeMetadata = useMemo(() => currentResume?.metadata
+    ? {
+        id: currentResume.id,
+        name: currentResume.metadata.fileName ?? currentResume.name,
+        uri: currentResume.metadata.uri ?? '',
+        size: currentResume.metadata.fileSize ?? 0,
+        mimeType: currentResume.metadata.mimeType ?? 'application/pdf',
+        extension: currentResume.metadata.extension ?? 'pdf',
+        selectedAt: new Date(currentResume.createdAt).toISOString(),
+      }
+    : null, [currentResume]);
+
   const [isPicking, setIsPicking] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionError, setExtractionError] = useState<string | null>(null);
@@ -42,22 +63,52 @@ export const UploadResumeScreen = (): React.JSX.Element => {
         return;
       }
 
-      setResumeMetadata(selectedFile);
-      setIsExtracting(true);
-
       const extractedText = await extractTextFromPdfFile(selectedFile.uri);
 
       if (!extractedText || extractedText.trim().length === 0) {
         setExtractionError(
           'The PDF was selected but no readable text was found. Please try another resume file.',
         );
-        setResumeText('');
         return;
       }
 
-      setResumeText(extractedText);
+      if (currentResume) {
+        updateResume(currentResume.id, {
+          text: extractedText,
+          sourceType: 'pdf',
+          metadata: {
+            uri: selectedFile.uri,
+            fileName: selectedFile.name,
+            fileSize: selectedFile.size,
+            mimeType: selectedFile.mimeType,
+            extension: selectedFile.extension,
+          },
+          updatedAt: Date.now(),
+          lastUsedAt: Date.now(),
+        });
+      } else {
+        const newResume = {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          name: selectedFile.name,
+          sourceType: 'pdf' as const,
+          text: extractedText,
+          metadata: {
+            uri: selectedFile.uri,
+            fileName: selectedFile.name,
+            fileSize: selectedFile.size,
+            mimeType: selectedFile.mimeType,
+            extension: selectedFile.extension,
+          },
+          professionalExperiences: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          lastUsedAt: Date.now(),
+        };
+        addResume(newResume);
+        setCurrentResume(newResume.id);
+        trackEvent('resume_added', {sourceType: 'pdf'});
+      }
     } catch (error) {
-      setResumeText('');
       const message =
         error instanceof Error
           ? error.message
@@ -82,15 +133,37 @@ export const UploadResumeScreen = (): React.JSX.Element => {
       return;
     }
 
-    setResumeText(normalized);
+    if (currentResume) {
+      updateResume(currentResume.id, {
+        text: normalized,
+        sourceType: 'text',
+        updatedAt: Date.now(),
+        lastUsedAt: Date.now(),
+      });
+    } else {
+      const newResume = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: 'My Resume',
+        sourceType: 'text' as const,
+        text: normalized,
+        metadata: undefined,
+        professionalExperiences: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        lastUsedAt: Date.now(),
+      };
+      addResume(newResume);
+      setCurrentResume(newResume.id);
+      trackEvent('resume_added', {sourceType: 'text'});
+    }
   };
 
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
-        <Card style={styles.card}>
-          <Card.Title title="Add Resume" subtitle="Upload a PDF or paste your resume text" />
-          <Card.Content>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Add Resume" subtitle="Upload a PDF or paste your resume text" />
+          <AppCard.Content>
             <PrimaryButton
               label={resumeMetadata ? 'Replace PDF' : 'Select PDF'}
               onPress={handlePickResume}
@@ -98,11 +171,10 @@ export const UploadResumeScreen = (): React.JSX.Element => {
               disabled={isPicking || isExtracting}
             />
 
-            <Divider style={styles.divider} />
+            <AppDivider style={styles.divider} />
 
             <Text style={styles.label}>Or paste resume text</Text>
-            <TextInput
-              mode="outlined"
+            <AppTextInput
               multiline
               value={pastedResume}
               onChangeText={value => {
@@ -112,10 +184,8 @@ export const UploadResumeScreen = (): React.JSX.Element => {
               placeholder="Paste your full resume text here..."
               numberOfLines={8}
               style={styles.pasteInput}
-              onFocus={() => setPasteError(null)}
+              autoFocus={false}
               autoCapitalize="sentences"
-              textAlignVertical="top"
-              contentStyle={styles.pasteInputContent}
             />
             {pasteError ? (
               <Text style={styles.errorText}>{pasteError}</Text>
@@ -126,7 +196,7 @@ export const UploadResumeScreen = (): React.JSX.Element => {
               disabled={!pastedResume.trim()}
             />
 
-            <Divider style={styles.divider} />
+            <AppDivider style={styles.divider} />
 
             <Text style={styles.label}>Selected file</Text>
             <Text style={styles.fileInfo}>{fileSizeLabel}</Text>
@@ -152,8 +222,8 @@ export const UploadResumeScreen = (): React.JSX.Element => {
                 Select a PDF or paste your resume text above to begin.
               </Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
       </View>
     </ScreenContainer>
   );

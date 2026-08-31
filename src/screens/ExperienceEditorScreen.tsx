@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react';
-import {Alert, StyleSheet, Text, View} from 'react-native';
-import {Button, Card, Switch, TextInput} from 'react-native-paper';
+import {Alert, StyleSheet, Switch, Text, View} from 'react-native';
+import {AppButton, AppCard, AppTextInput} from '../components';
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ScreenContainer} from '../components/common/ScreenContainer';
@@ -37,11 +37,18 @@ const EMPTY_EXPERIENCE: ExperienceDraft = {
 };
 
 export const ExperienceEditorScreen = (): React.JSX.Element => {
-  const experiences = useResumeStore(state => state.professionalExperiences);
-  const setProfessionalExperiences = useResumeStore(state => state.setProfessionalExperiences);
+  const resumes = useResumeStore(state => state.resumes);
+  const currentResumeId = useResumeStore(state => state.currentResumeId);
   const addProfessionalExperience = useResumeStore(state => state.addProfessionalExperience);
   const updateProfessionalExperience = useResumeStore(state => state.updateProfessionalExperience);
   const removeProfessionalExperience = useResumeStore(state => state.removeProfessionalExperience);
+
+  const currentResume = useMemo(
+    () => resumes.find(r => r.id === currentResumeId) ?? null,
+    [resumes, currentResumeId],
+  );
+
+  const experiences = currentResume?.professionalExperiences ?? [];
 
   const [draft, setDraft] = useState(EMPTY_EXPERIENCE);
 
@@ -115,37 +122,32 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
   return (
     <ScreenContainer scroll>
       <View style={styles.container}>
-        <Card style={styles.card}>
-          <Card.Title title={draft.id ? 'Edit Experience' : 'Add Experience'} />
-          <Card.Content style={styles.form}>
-            <TextInput
-              mode="outlined"
+        <AppCard style={styles.card}>
+          <AppCard.Title title={draft.id ? 'Edit Experience' : 'Add Experience'} />
+          <AppCard.Content style={styles.form}>
+            <AppTextInput
               label="Job title"
               value={draft.jobTitle}
               onChangeText={value => setDraft({...draft, jobTitle: value})}
             />
-            <TextInput
-              mode="outlined"
+            <AppTextInput
               label="Company"
               value={draft.company}
               onChangeText={value => setDraft({...draft, company: value})}
             />
-            <TextInput
-              mode="outlined"
+            <AppTextInput
               label="Location"
               value={draft.location}
               onChangeText={value => setDraft({...draft, location: value})}
             />
             <View style={styles.inlineRow}>
-              <TextInput
-                mode="outlined"
+              <AppTextInput
                 label="Start date"
                 value={draft.startDate}
                 onChangeText={value => setDraft({...draft, startDate: value})}
                 style={styles.flexField}
               />
-              <TextInput
-                mode="outlined"
+              <AppTextInput
                 label="End date"
                 value={draft.endDate ?? ''}
                 onChangeText={value => setDraft({...draft, endDate: value})}
@@ -162,8 +164,7 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
               />
             </View>
 
-            <TextInput
-              mode="outlined"
+            <AppTextInput
               label="Role summary"
               value={draft.summary}
               multiline
@@ -173,22 +174,21 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
 
             <View style={styles.bulletHeader}>
               <Text style={styles.sectionTitle}>Key achievements</Text>
-              <Button mode="text" onPress={addBullet}>Add bullet</Button>
+              <AppButton mode="text" onPress={addBullet}>Add bullet</AppButton>
             </View>
 
             {draft.bulletPoints.map((bullet, index) => (
               <View key={`${index}-${bullet}`} style={styles.bulletRow}>
-                <TextInput
-                  mode="outlined"
+                <AppTextInput
                   value={bullet}
                   onChangeText={value => updateBullet(index, value)}
                   style={styles.bulletInput}
                   multiline
                 />
                 {draft.bulletPoints.length > 1 ? (
-                  <Button mode="text" onPress={() => removeBullet(index)} compact>
+                  <AppButton mode="text" onPress={() => removeBullet(index)} compact>
                     Remove
-                  </Button>
+                  </AppButton>
                 ) : null}
               </View>
             ))}
@@ -200,9 +200,9 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
                   onPress={handleCreateExperience}
                   fullWidth={false}
                 />
-                <Button mode="text" onPress={() => setDraft(EMPTY_EXPERIENCE)}>
+                <AppButton mode="text" onPress={() => setDraft(EMPTY_EXPERIENCE)}>
                   Cancel
-                </Button>
+                </AppButton>
               </View>
             ) : (
               <PrimaryButton
@@ -214,13 +214,13 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
             {validation.valid ? null : (
               <Text style={styles.validation}>{validation.message}</Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
         {experiences.length ? (
-          <Card style={styles.card}>
-            <Card.Title title="Saved roles" />
-            <Card.Content>
+          <AppCard style={styles.card}>
+            <AppCard.Title title="Saved roles" />
+            <AppCard.Content>
               {experiences.map(experience => (
                 <View key={experience.id} style={styles.savedRole}>
                   <View style={styles.savedRoleHeader}>
@@ -232,20 +232,26 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
                   </Text>
                   <Text style={styles.roleSummary}>{experience.summary}</Text>
                   <View style={styles.savedActions}>
-                    <Button mode="text" onPress={() => handleEdit(experience)}>Edit</Button>
-                    <Button mode="text" onPress={() => handleDelete(experience.id)}>Delete</Button>
+                    <AppButton mode="text" onPress={() => handleEdit(experience)}>Edit</AppButton>
+                    <AppButton mode="text" onPress={() => handleDelete(experience.id)}>Delete</AppButton>
                   </View>
                 </View>
               ))}
-            </Card.Content>
-          </Card>
+            </AppCard.Content>
+          </AppCard>
         ) : null}
 
         {experiences.length ? (
           <PrimaryButton
             label="Clear all roles"
             onPress={() => {
-              setProfessionalExperiences([]);
+              const resumeId = useResumeStore.getState().currentResumeId;
+              if (resumeId) {
+                useResumeStore.getState().updateResume(resumeId, {
+                  professionalExperiences: [],
+                  updatedAt: Date.now(),
+                });
+              }
               setDraft(EMPTY_EXPERIENCE);
             }}
           />

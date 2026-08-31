@@ -1,13 +1,13 @@
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Button, ActivityIndicator, type ButtonProps} from 'react-native-paper';
+import {AppButton} from '../AppButton';
 
 interface PrimaryButtonProps {
   label: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  icon?: ButtonProps['icon'];
+  icon?: React.ReactNode;
   fullWidth?: boolean;
 }
 
@@ -23,20 +23,15 @@ export const PrimaryButton = ({
 
   return (
     <View style={[styles.wrapper, !fullWidth && styles.inlineWrapper]}>
-      <Button
-        mode="contained"
+      <AppButton
+        label={label}
         onPress={onPress}
+        mode="contained"
         disabled={isDisabled}
-        contentStyle={styles.content}
-        style={styles.button}
-        labelStyle={styles.label}
-        icon={icon}>
-        {loading ? (
-          <ActivityIndicator animating size={16} color="#FFFFFF" />
-        ) : (
-          label
-        )}
-      </Button>
+        loading={loading}
+        icon={icon}
+        fullWidth={fullWidth}
+      />
     </View>
   );
 };
@@ -48,15 +43,5 @@ const styles = StyleSheet.create({
   inlineWrapper: {
     width: 'auto',
     alignSelf: 'flex-start',
-  },
-  button: {
-    borderRadius: 12,
-  },
-  content: {
-    minHeight: 50,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

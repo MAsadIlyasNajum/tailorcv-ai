@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {Card} from 'react-native-paper';
+import {AppCard} from '../components';
 
 import {ScreenContainer} from '../components/common/ScreenContainer';
 
@@ -8,41 +8,59 @@ export const SettingsScreen = (): React.JSX.Element => {
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
-        <Card style={styles.card}>
-          <Card.Title title="Privacy" subtitle="MVP 1" />
-          <Card.Content>
-            <Text style={styles.sectionTitle}>Resume extraction</Text>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Privacy" subtitle="TailorCV AI" />
+          <AppCard.Content>
+            <Text style={styles.sectionTitle}>Local-first</Text>
+            <Text style={styles.sectionBody}>
+              Your resumes, job applications, and analyses are stored only on this
+              device. We do not sync them to any cloud backend.
+            </Text>
+
+            <View style={styles.spacer} />
+
+            <Text style={styles.sectionTitle}>AI-only data flow</Text>
+            <Text style={styles.sectionBody}>
+              Resume text and job descriptions are sent to the AI provider only when
+              you start an analysis. They are not used for any other purpose and are
+              not stored on our servers.
+            </Text>
+
+            <View style={styles.spacer} />
+
+            <Text style={styles.sectionTitle}>PDF extraction</Text>
             <Text style={styles.sectionBody}>
               PDF text extraction is processed entirely on your device.
             </Text>
 
             <View style={styles.spacer} />
 
-            <Text style={styles.sectionTitle}>AI analysis</Text>
+            <Text style={styles.sectionTitle}>Crash reporting</Text>
             <Text style={styles.sectionBody}>
-              Your extracted resume text and job description are sent to Gemini only
-              when you tap Analyze. We do not store them on any server.
+              Crash reports may include anonymized technical context. They never
+              include your resume text, job description, or personal details.
             </Text>
 
             <View style={styles.spacer} />
 
-            <Text style={styles.sectionTitle}>Local storage</Text>
+            <Text style={styles.sectionTitle}>Analytics</Text>
             <Text style={styles.sectionBody}>
-              Your latest resume, job description, and analysis result are saved
-              locally on this device using MMKV so you can resume where you left off.
+              We track high-level app events only (for example, analysis started).
+              No raw resume text, job description, AI responses, or PII are sent to
+              analytics.
             </Text>
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Coming in MVP 2" subtitle="Roadmap" />
-          <Card.Content>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Roadmap" subtitle="Coming next" />
+          <AppCard.Content>
             <Text style={styles.sectionBody}>
-              Resume builder, cover letters, interview prep, and cloud sync are
-              intentionally excluded from MVP 1.
+              Resume builder, cover letters, interview prep, and optional cloud
+              sync are planned for future releases.
             </Text>
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
       </View>
     </ScreenContainer>
   );

@@ -4,6 +4,7 @@ import {
   buildExperienceImprovementPrompt,
   buildFinalOutputPrompt,
   buildGeminiPrompt,
+  buildExtractionPrompt,
 } from './promptBuilder';
 import {parseAnalysisResponse, createAnalysisResult} from './analysisParser';
 import {
@@ -11,10 +12,12 @@ import {
   parseFinalOutputResponse,
 } from './finalOutputParser';
 import {parseExperienceImprovementResponse} from './experienceImprovementParser';
+import {parseExtractionResponse} from './extractionParser';
 import type {
   AnalysisResult,
   FinalResumeOutput,
   ProfessionalExperience,
+  ResumeContent,
 } from '../../types/resume';
 
 export interface AIService {
@@ -37,6 +40,7 @@ export interface AIService {
     keywords: string[];
     impactNotes: string[];
   }>>;
+  extractStructuredResume: (resumeText: string) => Promise<ResumeContent>;
 }
 
 const API_TIMEOUT_MS = 30000;
@@ -174,6 +178,14 @@ export class GeminiService implements AIService {
     const parsedResponse = parseFinalOutputResponse(candidateText);
 
     return createFinalResumeOutput(parsedResponse, analysisResult.id);
+  }
+
+  async extractStructuredResume(
+    resumeText: string,
+  ): Promise<ResumeContent> {
+    const prompt = buildExtractionPrompt(resumeText);
+    const candidateText = await this.callGemini(prompt);
+    return parseExtractionResponse(candidateText);
   }
 }
 

@@ -2,16 +2,23 @@ import {geminiService} from './geminiService';
 import {validateJobDescription} from '../../utils/validation/jobDescriptionValidation';
 import {useResumeStore} from '../../store/useResumeStore';
 import {validateFinalResumeOutput} from '../../utils/validation/finalOutputValidation';
+import type {AnalysisResult, JobApplication} from '../../types/resume';
+import {trackEvent} from '../analytics/analytics';
 
 export const runResumeAnalysis = async (): Promise<void> => {
   const store = useResumeStore.getState();
-  const resumeText = store.resumeText.trim();
-  const jobDescription = store.jobDescription.trim();
+  const currentResume = store.resumes.find(r => r.id === store.currentResumeId);
+  const currentJobApplication = store.jobApplications.find(
+    app => app.id === store.currentJobApplicationId,
+  );
+  const resumeText = currentResume?.text?.trim() ?? '';
 
-  if (!resumeText) {
+  if (!currentResume || !resumeText) {
     store.setAnalysisError('Please upload your resume first.');
     return;
   }
+
+  const jobDescription = currentJobApplication?.jobDescription?.trim() ?? '';
 
   const jobValidation = validateJobDescription(jobDescription);
   if (!jobValidation.valid) {
@@ -24,7 +31,36 @@ export const runResumeAnalysis = async (): Promise<void> => {
 
   try {
     const result = await geminiService.analyzeResume(resumeText, jobDescription);
-    store.setAnalysisResult(result);
+
+    let jobApplication = currentJobApplication;
+    if (!jobApplication) {
+      const newApp: JobApplication = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        resumeId: currentResume.id,
+        jobDescription,
+        status: 'active',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      store.addJobApplication(newApp);
+      store.setCurrentJobApplication(newApp.id);
+      jobApplication = newApp;
+    }
+
+    const analysisResult: AnalysisResult = {
+      ...result,
+      resumeId: currentResume.id,
+      jobApplicationId: jobApplication.id,
+      jobDescription,
+      companyName: jobApplication.companyName,
+      jobTitle: jobApplication.jobTitle,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    store.addAnalysisResult(analysisResult);
+    store.setCurrentAnalysis(analysisResult.id);
+    trackEvent('analysis_completed');
   } catch (error) {
     const message =
       error instanceof Error
@@ -32,6 +68,7 @@ export const runResumeAnalysis = async (): Promise<void> => {
         : 'We could not complete the analysis. Please try again.';
 
     store.setAnalysisError(message);
+    trackEvent('analysis_failed');
   } finally {
     store.setIsAnalyzing(false);
   }
@@ -39,9 +76,13 @@ export const runResumeAnalysis = async (): Promise<void> => {
 
 export const runExperienceImprovementAnalysis = async (): Promise<void> => {
   const store = useResumeStore.getState();
-  const resumeText = store.resumeText.trim();
-  const jobDescription = store.jobDescription.trim();
-  const professionalExperiences = store.professionalExperiences;
+  const currentResume = store.resumes.find(r => r.id === store.currentResumeId);
+  const currentJobApplication = store.jobApplications.find(
+    app => app.id === store.currentJobApplicationId,
+  );
+  const resumeText = currentResume?.text?.trim() ?? '';
+  const jobDescription = currentJobApplication?.jobDescription?.trim() ?? '';
+  const professionalExperiences = currentResume?.professionalExperiences ?? [];
 
   if (!resumeText) {
     store.setAnalysisError('Please upload your resume first.');
@@ -97,10 +138,14 @@ export const runExperienceImprovementAnalysis = async (): Promise<void> => {
 
 export const runFinalOutputGeneration = async (): Promise<void> => {
   const store = useResumeStore.getState();
-  const resumeText = store.resumeText.trim();
-  const jobDescription = store.jobDescription.trim();
-  const analysisResult = store.analysisResult;
-  const professionalExperiences = store.professionalExperiences;
+  const currentResume = store.resumes.find(r => r.id === store.currentResumeId);
+  const currentJobApplication = store.jobApplications.find(
+    app => app.id === store.currentJobApplicationId,
+  );
+  const resumeText = currentResume?.text?.trim() ?? '';
+  const jobDescription = currentJobApplication?.jobDescription?.trim() ?? '';
+  const currentAnalysis = store.analysisResults.find(r => r.id === store.currentAnalysisId);
+  const professionalExperiences = currentResume?.professionalExperiences ?? [];
 
   if (!resumeText) {
     store.setFinalOutputError('Please upload your resume first.');
@@ -115,10 +160,21 @@ export const runFinalOutputGeneration = async (): Promise<void> => {
     return;
   }
 
-  if (!analysisResult) {
+  if (!currentAnalysis) {
     store.setFinalOutputError('Please run analysis before generating final output.');
     return;
   }
+
+  const userEdits = currentAnalysis.userEditedSuggestions;
+  const analysisForPrompt = userEdits
+    ? {
+        ...currentAnalysis,
+        suggestedSummary: userEdits.suggestedSummary ?? currentAnalysis.suggestedSummary,
+        suggestedSkills: userEdits.suggestedSkills ?? currentAnalysis.suggestedSkills,
+        experienceImprovements: userEdits.experienceImprovements ?? currentAnalysis.experienceImprovements,
+        atsTips: userEdits.atsTips ?? currentAnalysis.atsTips,
+      }
+    : currentAnalysis;
 
   store.setIsGeneratingFinalOutput(true);
   store.setFinalOutputError(null);
@@ -127,7 +183,7 @@ export const runFinalOutputGeneration = async (): Promise<void> => {
     const finalOutput = await geminiService.generateFinalResumeOutput(
       resumeText,
       jobDescription,
-      analysisResult,
+      analysisForPrompt,
       professionalExperiences,
     );
 

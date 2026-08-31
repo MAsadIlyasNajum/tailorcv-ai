@@ -34,6 +34,17 @@ jest.mock('@react-navigation/native-stack', () => {
   };
 });
 
+jest.mock('@react-navigation/bottom-tabs', () => {
+  const ReactMock = require('react');
+  return {
+    createBottomTabNavigator: () => ({
+      Navigator: ({children}: {children?: React.ReactNode}) =>
+        ReactMock.createElement('Navigator', null, children),
+      Screen: () => null,
+    }),
+  };
+});
+
 jest.mock('@react-navigation/native', () => {
   const ReactMock = require('react');
   return {
@@ -71,17 +82,13 @@ jest.mock('@react-native-documents/picker', () => ({
   },
 }));
 
-jest.mock('react-native-blob-util', () => ({
-  __esModule: true,
-  default: {
-    fs: {
-      readFile: jest.fn(async () => ''),
-    },
-  },
-}));
-
 jest.mock('react-native-pdf-text-extractor', () => ({
   extractText: jest.fn(async () => ''),
+}));
+
+jest.mock('react-native-html-to-pdf', () => ({
+  __esModule: true,
+  generatePDF: jest.fn(async () => ({filePath: '/test/path.pdf'})),
 }));
 
 jest.mock('react-native-dotenv', () => ({
@@ -92,26 +99,10 @@ jest.mock('react-native-dotenv', () => ({
 jest.mock('react-native-safe-area-context', () => {
   const ReactMock = require('react');
   return {
-    SafeAreaProvider: ({children}: {children?: React.ReactNode}) =>
-      ReactMock.createElement('SafeAreaProvider', null, children),
     SafeAreaView: ({children}: {children?: React.ReactNode}) =>
       ReactMock.createElement('SafeAreaView', null, children),
-  };
-});
-
-jest.mock('react-native-paper', () => {
-  const ReactMock = require('react');
-  const {Text: MockText, View: MockView} = require('react-native');
-  const PaperProvider = ({children}: {children?: React.ReactNode}) =>
-    ReactMock.createElement(MockView, null, children);
-  return {
-    MD3LightTheme: {colors: {}},
-    PaperProvider,
-    Button: ({children}: {children?: React.ReactNode}) =>
-      ReactMock.createElement(MockText, null, children),
-    Text: ({children}: {children?: React.ReactNode}) =>
-      ReactMock.createElement(MockText, null, children),
-    default: {PaperProvider},
+    SafeAreaProvider: ({children}: {children?: React.ReactNode}) =>
+      ReactMock.createElement('SafeAreaProvider', null, children),
   };
 });
 

@@ -15,26 +15,6 @@ jest.mock('@react-navigation/native', () => ({
   }),
 }));
 
-jest.mock('react-native-paper', () => {
-  const ReactMock = require('react');
-  const {Text: MockText, View: MockView} = require('react-native');
-  const Card = ({children}: {children?: React.ReactNode}) =>
-    ReactMock.createElement(MockView, null, children);
-
-  Card.Title = ({title}: {title: string}) =>
-    ReactMock.createElement(MockText, null, title);
-  Card.Content = ({children}: {children?: React.ReactNode}) =>
-    ReactMock.createElement(MockView, null, children);
-
-  return {
-    Button: ({children}: {children?: React.ReactNode}) =>
-      ReactMock.createElement(MockText, null, children),
-    Chip: ({children}: {children?: React.ReactNode}) =>
-      ReactMock.createElement(MockText, null, children),
-    Card,
-  };
-});
-
 jest.mock('react-native-safe-area-context', () => {
   const ReactMock = require('react');
   const {View: MockView} = require('react-native');
@@ -45,6 +25,11 @@ jest.mock('react-native-safe-area-context', () => {
       ReactMock.createElement(MockView, null, children),
   };
 });
+
+jest.mock('react-native-html-to-pdf', () => ({
+  __esModule: true,
+  generatePDF: jest.fn(async () => ({filePath: '/test/path.pdf'})),
+}));
 
 import {FinalResumeOutputScreen} from '../src/screens/FinalResumeOutputScreen';
 import {useResumeStore} from '../src/store/useResumeStore';

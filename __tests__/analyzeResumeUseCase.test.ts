@@ -32,8 +32,39 @@ describe('runResumeAnalysis', () => {
     useResumeStore.getState().clearAll();
   });
 
+  const createResume = (text: string) => {
+    const resumeId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    useResumeStore.getState().addResume({
+      id: resumeId,
+      name: 'Test Resume',
+      sourceType: 'text',
+      text,
+      professionalExperiences: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      lastUsedAt: Date.now(),
+    });
+    useResumeStore.getState().setCurrentResume(resumeId);
+    return resumeId;
+  };
+
+  const createJobApplication = (resumeId: string, jobDescription: string) => {
+    const appId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    useResumeStore.getState().addJobApplication({
+      id: appId,
+      resumeId,
+      jobDescription,
+      status: 'active',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    useResumeStore.getState().setCurrentJobApplication(appId);
+    return appId;
+  };
+
   it('sets validation error when resume text is missing', async () => {
-    useResumeStore.getState().setJobDescription(
+    createJobApplication(
+      'resume-1',
       'We are hiring a React Native engineer with strong TypeScript and testing skills to build reliable mobile experiences.',
     );
 
@@ -46,8 +77,8 @@ describe('runResumeAnalysis', () => {
   });
 
   it('sets validation error when job description is invalid', async () => {
-    useResumeStore.getState().setResumeText('Experienced engineer building React Native apps.');
-    useResumeStore.getState().setJobDescription('Short JD');
+    createResume('Experienced engineer building React Native apps.');
+    createJobApplication('resume-1', 'Short JD');
 
     await runResumeAnalysis();
 
@@ -58,8 +89,9 @@ describe('runResumeAnalysis', () => {
   });
 
   it('stores analysis result when AI call succeeds', async () => {
-    useResumeStore.getState().setResumeText('Resume text content with achievements.');
-    useResumeStore.getState().setJobDescription(
+    const resumeId = createResume('Resume text content with achievements.');
+    createJobApplication(
+      resumeId,
       'Looking for a mobile engineer with React Native, TypeScript, testing, and performance optimization experience across production apps.',
     );
 
@@ -79,14 +111,17 @@ describe('runResumeAnalysis', () => {
     await runResumeAnalysis();
 
     expect(mockedAnalyzeResume).toHaveBeenCalledTimes(1);
-    expect(useResumeStore.getState().analysisResult?.id).toBe('analysis-1');
+    expect(useResumeStore.getState().analysisResults).toHaveLength(1);
+    expect(useResumeStore.getState().analysisResults[0].id).toBe('analysis-1');
+    expect(useResumeStore.getState().currentAnalysisId).toBe('analysis-1');
     expect(useResumeStore.getState().analysisError).toBeNull();
     expect(useResumeStore.getState().isAnalyzing).toBe(false);
   });
 
   it('stores user-facing error when AI call fails', async () => {
-    useResumeStore.getState().setResumeText('Resume text content with achievements.');
-    useResumeStore.getState().setJobDescription(
+    const resumeId = createResume('Resume text content with achievements.');
+    createJobApplication(
+      resumeId,
       'Looking for a mobile engineer with React Native, TypeScript, testing, and performance optimization experience across production apps.',
     );
 
@@ -94,7 +129,7 @@ describe('runResumeAnalysis', () => {
 
     await runResumeAnalysis();
 
-    expect(useResumeStore.getState().analysisResult).toBeNull();
+    expect(useResumeStore.getState().analysisResults).toHaveLength(0);
     expect(useResumeStore.getState().analysisError).toBe(
       'The AI service is temporarily busy. Please try again shortly.',
     );
@@ -102,13 +137,16 @@ describe('runResumeAnalysis', () => {
   });
 
   it('stores final output when generation succeeds', async () => {
-    useResumeStore.getState().setResumeText('Resume text with proven achievements.');
-    useResumeStore.getState().setJobDescription(
+    const resumeId = createResume('Resume text with proven achievements.');
+    const appId = createJobApplication(
+      resumeId,
       'Seeking a mobile engineer with React Native, TypeScript, and quality-focused delivery experience in production environments.',
     );
-    useResumeStore.getState().setAnalysisResult({
+
+    useResumeStore.getState().addAnalysisResult({
       id: 'analysis-5',
-      resumeId: 'resume-5',
+      resumeId,
+      jobApplicationId: appId,
       jobDescription:
         'Seeking a mobile engineer with React Native, TypeScript, and quality-focused delivery experience in production environments.',
       matchScore: 83,
@@ -118,7 +156,9 @@ describe('runResumeAnalysis', () => {
       experienceImprovements: [{original: 'Built features', improved: 'Delivered production features'}],
       atsTips: ['Keep headings standard'],
       createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
+    useResumeStore.getState().setCurrentAnalysis('analysis-5');
 
     mockedGenerateFinalResumeOutput.mockResolvedValue({
       id: 'final-1',
@@ -146,8 +186,9 @@ describe('runResumeAnalysis', () => {
   });
 
   it('sets validation error when final output generation runs without analysis', async () => {
-    useResumeStore.getState().setResumeText('Resume text with proven achievements.');
-    useResumeStore.getState().setJobDescription(
+    const resumeId = createResume('Resume text with proven achievements.');
+    createJobApplication(
+      resumeId,
       'Seeking a mobile engineer with React Native, TypeScript, and quality-focused delivery experience in production environments.',
     );
 

@@ -1,6 +1,6 @@
 import React, {useMemo} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {Card, Divider} from 'react-native-paper';
+import {AppCard, AppDivider} from '../components';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
@@ -12,10 +12,29 @@ import type {AppStackParamList} from '../app/navigation/AppNavigator';
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.HOME>;
 
 export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
-  const resumeText = useResumeStore(state => state.resumeText);
-  const resumeMetadata = useResumeStore(state => state.resumeMetadata);
-  const jobDescription = useResumeStore(state => state.jobDescription);
-  const analysisResult = useResumeStore(state => state.analysisResult);
+  const resumes = useResumeStore(state => state.resumes);
+  const currentResumeId = useResumeStore(state => state.currentResumeId);
+  const jobApplications = useResumeStore(state => state.jobApplications);
+  const currentJobApplicationId = useResumeStore(state => state.currentJobApplicationId);
+  const analysisResults = useResumeStore(state => state.analysisResults);
+  const currentAnalysisId = useResumeStore(state => state.currentAnalysisId);
+
+  const currentResume = useMemo(
+    () => resumes.find(r => r.id === currentResumeId) ?? null,
+    [resumes, currentResumeId],
+  );
+  const currentJobApplication = useMemo(
+    () => jobApplications.find(app => app.id === currentJobApplicationId) ?? null,
+    [jobApplications, currentJobApplicationId],
+  );
+  const currentAnalysis = useMemo(
+    () => analysisResults.find(r => r.id === currentAnalysisId) ?? null,
+    [analysisResults, currentAnalysisId],
+  );
+
+  const resumeText = currentResume?.text ?? '';
+  const jobDescription = currentJobApplication?.jobDescription ?? '';
+  const analysisResult = currentAnalysis;
 
   const hasResume = Boolean(resumeText.trim());
   const hasJobDescription = Boolean(jobDescription.trim());
@@ -26,12 +45,12 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
       return 'No resume uploaded yet.';
     }
 
-    if (resumeMetadata?.name) {
-      return `✓ ${resumeMetadata.name}`;
+    if (currentResume?.name) {
+      return `✓ ${currentResume.name}`;
     }
 
     return '✓ Resume text added';
-  }, [hasResume, resumeMetadata?.name]);
+  }, [hasResume, currentResume?.name]);
 
   const latestAnalysisLabel = useMemo(() => {
     if (!analysisResult) {
@@ -44,20 +63,29 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
-        <Card style={styles.logoCard}>
-          <Card.Content>
+        <AppCard style={styles.logoCard}>
+          <AppCard.Content>
             <Text style={styles.logoTitle}>TailorCV AI</Text>
             <Text style={styles.logoSubtitle}>
               Tailor your resume for your next job.
             </Text>
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
         <View style={styles.actions}>
-          <PrimaryButton
-            label={hasResume ? 'Replace Resume' : 'Upload Resume'}
-            onPress={() => navigation.navigate(ROUTES.UPLOAD_RESUME)}
-          />
+          {currentResumeId ? (
+            <PrimaryButton
+              label="Start New Application"
+              onPress={() => navigation.navigate(ROUTES.JOB_DESCRIPTION)}
+              icon="briefcase-plus"
+            />
+          ) : (
+            <PrimaryButton
+              label="Start New Application"
+              onPress={() => navigation.navigate(ROUTES.RESUMES)}
+              icon="briefcase-plus"
+            />
+          )}
 
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Resume</Text>
@@ -91,21 +119,21 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
           />
         </View>
 
-        <Divider style={styles.divider} />
+        <AppDivider style={styles.divider} />
 
-        <Card style={styles.resultCard}>
-          <Card.Title title="Latest Analysis" />
-          <Card.Content>
+        <AppCard style={styles.resultCard}>
+          <AppCard.Title title="Latest Analysis" />
+          <AppCard.Content>
             <Text style={styles.summaryText}>{latestAnalysisLabel}</Text>
             {analysisResult ? (
               <PrimaryButton
                 label="View Results"
-                onPress={() => navigation.navigate(ROUTES.ANALYSIS_RESULT)}
+                onPress={() => navigation.navigate(ROUTES.ANALYSIS_RESULT as any)}
                 fullWidth={false}
               />
             ) : null}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
       </View>
     </ScreenContainer>
   );

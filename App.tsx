@@ -1,12 +1,14 @@
 import React from 'react';
 import {StatusBar} from 'react-native';
 import {NavigationContainer, DefaultTheme} from '@react-navigation/native';
-import {PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import {AppNavigator} from './src/app/navigation/AppNavigator';
-import {appTheme} from './src/app/theme/theme';
 import {useResumeStore} from './src/store/useResumeStore';
+import {hasMigrated, migrateLegacySnapshot, getSchemaVersion, setSchemaVersion, runResumeModelMigration} from './src/services/storage/storage';
+import {trackEvent} from './src/services/analytics/analytics';
+import {initCrashReporting} from './src/services/analytics/crashReporting';
+import {loadAnalyticsEvents} from './src/services/analytics/analytics';
 
 const navTheme = {
   ...DefaultTheme,
@@ -24,17 +26,34 @@ function App(): React.JSX.Element {
   const hydrateLatest = useResumeStore(state => state.hydrateLatest);
 
   React.useEffect(() => {
+    const performMigration = (): void => {
+      if (hasMigrated()) {
+        return;
+      }
+
+      const legacy = require('./src/services/storage/storage').getLatestAnalysis();
+      if (legacy) {
+        migrateLegacySnapshot(legacy);
+      }
+    };
+
+    performMigration();
+    runResumeModelMigration();
     hydrateLatest();
+    loadAnalyticsEvents();
+    if (getSchemaVersion() < 1) {
+      setSchemaVersion(1);
+    }
+    initCrashReporting();
+    trackEvent('app_opened');
   }, [hydrateLatest]);
 
   return (
     <SafeAreaProvider>
-      <PaperProvider theme={appTheme}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-        <NavigationContainer theme={navTheme}>
-          <AppNavigator />
-        </NavigationContainer>
-      </PaperProvider>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <NavigationContainer theme={navTheme}>
+        <AppNavigator />
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }

@@ -1,32 +1,54 @@
 import React, {useMemo, useState} from 'react';
-import {Alert, Clipboard, StyleSheet, Text, View} from 'react-native';
-import {Button, Card, Chip} from 'react-native-paper';
+import {Alert, Clipboard, Share, StyleSheet, Text, View} from 'react-native';
+import {AppButton, AppCard, AppChip} from '../components';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp, NativeStackScreenProps} from '@react-navigation/native-stack';
 
+import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ScreenContainer} from '../components/common/ScreenContainer';
 import {useResumeStore} from '../store/useResumeStore';
+import type {AppStackParamList} from '../app/navigation/AppNavigator';
+import {ROUTES} from '../constants/routes';
+import {trackEvent} from '../services/analytics/analytics';
+import {runFinalOutputGeneration} from '../services/ai/analyzeResumeUseCase';
+import {calculateWeightedKeywordCoverage} from '../utils/validation/keywordCoverage';
 
-const EMPTY_RESULT = {
-  matchScore: 0,
-  matchingKeywords: [],
-  missingKeywords: [],
-  suggestedSummary: 'No analysis available yet.',
-  suggestedSkills: [],
-  experienceImprovements: [],
-  atsTips: [],
-};
+type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.ANALYSIS_RESULT>;
 
-export const AnalysisResultScreen = (): React.JSX.Element => {
-  const result = useResumeStore(state => state.analysisResult);
+export const AnalysisResultScreen = ({route}: Props): React.JSX.Element => {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const analysisResults = useResumeStore(state => state.analysisResults);
+  const currentAnalysisId = useResumeStore(state => state.currentAnalysisId);
   const usefulnessFeedback = useResumeStore(state => state.usefulnessFeedback);
   const setUsefulnessFeedback = useResumeStore(state => state.setUsefulnessFeedback);
+  const finalResumeOutput = useResumeStore(state => state.finalResumeOutput);
+  const isGeneratingFinalOutput = useResumeStore(state => state.isGeneratingFinalOutput);
+  const finalOutputError = useResumeStore(state => state.finalOutputError);
+  const setFinalOutputError = useResumeStore(state => state.setFinalOutputError);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  const analysisId = route?.params?.analysisId ?? currentAnalysisId;
+  const result = useMemo(
+    () => analysisResults.find(r => r.id === analysisId) ?? null,
+    [analysisResults, analysisId],
+  );
+
+  const keywordCoverage = useMemo(() => {
+    if (!result) {
+      return null;
+    }
+    return calculateWeightedKeywordCoverage(
+      result.matchingKeywords,
+      result.missingKeywords,
+    );
+  }, [result]);
 
   const viewModel = useMemo(() => {
     if (result) {
       return {
         matchScore: Math.max(0, Math.min(100, result.matchScore ?? 0)),
-        matchingKeywords: result.matchingKeywords ?? [],
-        missingKeywords: result.missingKeywords ?? [],
+        matchingKeywords: (result.matchingKeywords ?? []).map(k => typeof k === 'string' ? k : k.term),
+        missingKeywords: (result.missingKeywords ?? []).map(k => typeof k === 'string' ? k : k.term),
         suggestedSummary: result.suggestedSummary ?? 'No summary available.',
         suggestedSkills: result.suggestedSkills ?? [],
         experienceImprovements: result.experienceImprovements ?? [],
@@ -34,16 +56,60 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
       };
     }
 
-    return EMPTY_RESULT;
+    return {
+      matchScore: 0,
+      matchingKeywords: [],
+      missingKeywords: [],
+      suggestedSummary: 'No analysis available yet.',
+      suggestedSkills: [],
+      experienceImprovements: [],
+      atsTips: [],
+    };
   }, [result]);
 
-  const handleCopy = (): void => {
-    if (!result?.suggestedSummary) {
+  const handleCopy = (text: string, label: string): void => {
+    Clipboard.setString(text);
+    Alert.alert('Copied', `${label} copied to clipboard.`);
+    trackEvent('result_copied', {section: label});
+  };
+
+  const handleShare = async (): Promise<void> => {
+    if (!result) {
       return;
     }
 
-    Clipboard.setString(result.suggestedSummary);
-    Alert.alert('Copied', 'Suggested summary copied to clipboard.');
+    const message = [
+      `Resume Match: ${viewModel.matchScore}%`,
+      `Keyword Coverage: ${keywordCoverage ?? 0}%`,
+      '',
+      'Matching Keywords:',
+      ...viewModel.matchingKeywords.map(k => `- ${k}`),
+      '',
+      'Missing Keywords:',
+      ...viewModel.missingKeywords.map(k => `- ${k}`),
+      '',
+      'Suggested Summary:',
+      viewModel.suggestedSummary,
+      '',
+      'Suggested Skills:',
+      ...viewModel.suggestedSkills.map(s => `- ${s}`),
+      '',
+      'Experience Improvements:',
+      ...viewModel.experienceImprovements.map(
+        item => `- Original: ${item.original}\n  Improved: ${item.improved}`,
+      ),
+      '',
+      'ATS Tips:',
+      ...viewModel.atsTips.map(tip => `- ${tip}`),
+    ]
+      .join('\n');
+
+    try {
+      await Share.share({message, title: 'TailorCV AI Analysis'});
+      trackEvent('result_shared');
+    } catch {
+      // share cancelled or failed silently
+    }
   };
 
   const handleUsefulness = (value: 'yes' | 'no'): void => {
@@ -51,79 +117,102 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
     setFeedbackSubmitted(true);
   };
 
+  const handleGenerateFinalOutput = async (): Promise<void> => {
+    setFinalOutputError(null);
+    await runFinalOutputGeneration();
+    const store = useResumeStore.getState();
+    if (store.finalResumeOutput) {
+      trackEvent('final_output_generated');
+      navigation.navigate(ROUTES.FINAL_RESUME_OUTPUT);
+    }
+  };
+
+  const handleRetryFinalOutput = (): void => {
+    setFinalOutputError(null);
+    handleGenerateFinalOutput();
+  };
+
+  const hasFinalOutput = finalResumeOutput?.analysisId === result?.id;
+
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
-        <Card style={styles.card}>
-          <Card.Title title="ATS Match Score" subtitle="ATS = Applicant Tracking System — the software recruiters use to filter resumes" />
-          <Card.Content>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Resume Match" subtitle="AI-estimated alignment with this job description" />
+          <AppCard.Content>
             <Text style={styles.score}>{viewModel.matchScore}%</Text>
+            {keywordCoverage !== null ? (
+              <Text style={styles.coverageText}>Keyword Coverage: {keywordCoverage}%</Text>
+            ) : null}
             <Text style={styles.scoreExplanation}>
-              This is an AI-estimated match based on how closely your resume
-              aligns with this job description. Use it as a rough guide, not a
-              precise measure.
+              Keyword coverage is weighted by importance in the job description.
             </Text>
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="What matches" />
-          <Card.Content style={styles.chipsRow}>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="What matches" />
+          <AppCard.Content style={styles.chipsRow}>
             {viewModel.matchingKeywords.length ? (
               viewModel.matchingKeywords.map(keyword => (
-                <Chip key={keyword} compact>
+                <AppChip key={keyword} compact>
                   {keyword}
-                </Chip>
+                </AppChip>
               ))
             ) : (
               <Text style={styles.emptyText}>No matching keywords identified.</Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="What you're missing" />
-          <Card.Content style={styles.chipsRow}>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="What you're missing" />
+          <AppCard.Content style={styles.chipsRow}>
             {viewModel.missingKeywords.length ? (
               viewModel.missingKeywords.map(keyword => (
-                <Chip key={keyword} compact>
+                <AppChip key={keyword} compact>
                   {keyword}
-                </Chip>
+                </AppChip>
               ))
             ) : (
               <Text style={styles.emptyText}>No missing keywords identified.</Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Suggested Summary" />
-          <Card.Content>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Suggested Summary" />
+          <AppCard.Content>
             <Text style={styles.summary}>{viewModel.suggestedSummary}</Text>
             {result?.suggestedSummary ? (
-              <Button mode="text" onPress={handleCopy} style={styles.copyButton}>
+              <AppButton mode="text" onPress={() => handleCopy(viewModel.suggestedSummary, 'Suggested summary')} style={styles.copyButton}>
                 Copy
-              </Button>
+              </AppButton>
             ) : null}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Suggested Skills" />
-          <Card.Content style={styles.chipsRow}>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Suggested Skills" />
+          <AppCard.Content style={styles.chipsRow}>
             {viewModel.suggestedSkills.length ? (
               viewModel.suggestedSkills.map(skill => (
-                <Chip key={skill}>{skill}</Chip>
+                <AppChip key={skill}>{skill}</AppChip>
               ))
             ) : (
               <Text style={styles.emptyText}>No recommended skills available.</Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+          {viewModel.suggestedSkills.length ? (
+            <AppButton mode="text" onPress={() => handleCopy(viewModel.suggestedSkills.join('\n'), 'Suggested skills')} style={styles.copyButton}>
+              Copy all skills
+            </AppButton>
+          ) : null}
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="Experience Improvements" />
-          <Card.Content style={styles.listContainer}>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="Experience Improvements" />
+          <AppCard.Content style={styles.listContainer}>
             {viewModel.experienceImprovements.length ? (
               viewModel.experienceImprovements.map((item, index) => (
                 <View key={`${item.original}-${index}`} style={styles.improvementBlock}>
@@ -136,12 +225,12 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
             ) : (
               <Text style={styles.emptyText}>No experience improvements were generated.</Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+        </AppCard>
 
-        <Card style={styles.card}>
-          <Card.Title title="ATS Tips" />
-          <Card.Content style={styles.listContainer}>
+        <AppCard style={styles.card}>
+          <AppCard.Title title="ATS Tips" />
+          <AppCard.Content style={styles.listContainer}>
             {viewModel.atsTips.length ? (
               viewModel.atsTips.map((tip, index) => (
                 <Text key={`${tip}-${index}`} style={styles.tipText}>• {tip}</Text>
@@ -149,34 +238,104 @@ export const AnalysisResultScreen = (): React.JSX.Element => {
             ) : (
               <Text style={styles.emptyText}>No ATS tips available.</Text>
             )}
-          </Card.Content>
-        </Card>
+          </AppCard.Content>
+          {viewModel.atsTips.length ? (
+            <AppButton mode="text" onPress={() => handleCopy(viewModel.atsTips.join('\n'), 'ATS tips')} style={styles.copyButton}>
+              Copy all tips
+            </AppButton>
+          ) : null}
+        </AppCard>
 
         {result ? (
-          <Card style={styles.card}>
-            <Card.Title title="Was this analysis helpful?" />
-            <Card.Content style={styles.feedbackRow}>
+          <AppCard style={styles.card}>
+            <AppCard.Title title="Was this analysis helpful?" />
+            <AppCard.Content style={styles.feedbackRow}>
               {usefulnessFeedback || feedbackSubmitted ? (
                 <Text style={styles.feedbackConfirmed}>Thanks for your feedback.</Text>
               ) : (
                 <>
-                  <Button
+                  <AppButton
                     mode="contained"
                     onPress={() => handleUsefulness('yes')}
                     style={styles.feedbackButton}>
                     {'\u{1F44D}'} Yes
-                  </Button>
-                  <Button
+                  </AppButton>
+                  <AppButton
                     mode="outlined"
                     onPress={() => handleUsefulness('no')}
                     style={styles.feedbackButton}>
                     {'\u{1F44E}'} No
-                  </Button>
+                  </AppButton>
                 </>
               )}
-            </Card.Content>
-          </Card>
+            </AppCard.Content>
+          </AppCard>
         ) : null}
+
+        {finalOutputError ? (
+          <AppCard style={[styles.card, styles.errorCard]}>
+            <AppCard.Title title="Final Output Error" />
+            <AppCard.Content>
+              <Text style={styles.errorText}>{finalOutputError}</Text>
+              <View style={styles.errorActions}>
+                <AppButton mode="contained" onPress={handleRetryFinalOutput}>
+                  Try Again
+                </AppButton>
+                <AppButton mode="outlined" onPress={() => navigation.goBack()}>
+                  Back to Analysis
+                </AppButton>
+              </View>
+            </AppCard.Content>
+          </AppCard>
+        ) : null}
+
+        <View style={styles.footerActions}>
+          <PrimaryButton label="Edit Suggestions" onPress={() => navigation.navigate(ROUTES.EDIT_SUGGESTIONS, {analysisId: result?.id})} />
+          {hasFinalOutput ? (
+            <PrimaryButton
+              label="View Final Resume"
+              onPress={() => navigation.navigate(ROUTES.FINAL_RESUME_OUTPUT)}
+            />
+          ) : (
+            <PrimaryButton
+              label="Generate Tailored Resume"
+              onPress={handleGenerateFinalOutput}
+              loading={isGeneratingFinalOutput}
+              disabled={isGeneratingFinalOutput}
+            />
+          )}
+          <View style={styles.footerSecondary}>
+            <AppButton mode="outlined" onPress={() => handleCopy([
+              `Resume Match: ${viewModel.matchScore}%`,
+              `Keyword Coverage: ${keywordCoverage ?? 0}%`,
+              '',
+              'Matching Keywords:',
+              ...viewModel.matchingKeywords.map(k => `- ${k}`),
+              '',
+              'Missing Keywords:',
+              ...viewModel.missingKeywords.map(k => `- ${k}`),
+              '',
+              'Suggested Summary:',
+              viewModel.suggestedSummary,
+              '',
+              'Suggested Skills:',
+              ...viewModel.suggestedSkills.map(s => `- ${s}`),
+              '',
+              'Experience Improvements:',
+              ...viewModel.experienceImprovements.map(
+                item => `- Original: ${item.original}\n  Improved: ${item.improved}`,
+              ),
+              '',
+              'ATS Tips:',
+              ...viewModel.atsTips.map(tip => `- ${tip}`),
+            ].join('\n'), 'Full analysis')}>
+              Copy
+            </AppButton>
+            <AppButton mode="outlined" onPress={handleShare}>
+              Share
+            </AppButton>
+          </View>
+        </View>
       </View>
     </ScreenContainer>
   );
@@ -193,6 +352,12 @@ const styles = StyleSheet.create({
     fontSize: 44,
     color: '#2563EB',
     fontWeight: '700',
+  },
+  coverageText: {
+    fontSize: 16,
+    color: '#475569',
+    marginTop: 4,
+    fontWeight: '600',
   },
   scoreExplanation: {
     marginTop: 6,
@@ -261,5 +426,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#14B8A6',
     fontWeight: '600',
+  },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  footerSecondary: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  errorCard: {
+    borderColor: '#DC2626',
+    borderWidth: 1,
+  },
+  errorTitle: {
+    color: '#DC2626',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#991B1B',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  errorActions: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
   },
 });
