@@ -5,6 +5,41 @@ export interface KeywordWithImportance {
   importance: KeywordImportance;
 }
 
+export interface AtsScoreBreakdown {
+  overall: number;
+  keywords: number;
+  skills: number;
+  experience: number;
+  education: number;
+  formatting: number;
+}
+
+export interface KeywordGap {
+  term: string;
+  importance: KeywordImportance;
+  present: boolean;
+  suggestedLocation?: string;
+}
+
+export type OptimizationSuggestionType = 'add_keyword' | 'rephrase' | 'add_detail' | 'reorder';
+
+export interface OptimizationSuggestion {
+  id: string;
+  type: OptimizationSuggestionType;
+  section: SectionType;
+  sectionId?: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+  applied: boolean;
+}
+
+export interface ScoreSnapshot {
+  timestamp: number;
+  overall: number;
+  breakdown: AtsScoreBreakdown;
+  appliedSuggestions: string[];
+}
+
 export interface ExperienceImprovement {
   original: string;
   improved: string;
@@ -53,6 +88,12 @@ export interface Resume {
   createdAt: number;
   updatedAt: number;
   lastUsedAt: number;
+  /** Selected template ID for preview/PDF export. Defaults to 'classic' when undefined. */
+  templateId?: string;
+  /** History of ATS score snapshots for before/after comparison. */
+  scoreHistory?: ScoreSnapshot[];
+  /** IDs of optimization suggestions that have been applied. */
+  appliedSuggestions?: string[];
 }
 
 /**
@@ -98,6 +139,8 @@ export interface LinkValue {
 }
 
 export interface PersonalInfoData {
+  firstName?: string;
+  lastName?: string;
   fullName?: string;
   /** Optional local photo uri only. Never a remote/cloud url. */
   photoUri?: string;

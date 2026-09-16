@@ -48,7 +48,9 @@ not line-proven. **Unknown** = explicitly not known.
 - **UI:** `react-native-paper` (MD3 light theme) + `react-native-safe-area-context`.
 - **State:** `zustand` v5, single store `useResumeStore` (`src/store/useResumeStore.ts`).
 - **Storage:** `react-native-mmkv` (key `latest-analysis`, id `tailorcv-ai-storage`).
-- **PDF:** `react-native-pdf-text-extractor` (native `extractText(uri)`).
+- **PDF:** `react-native-html-to-pdf` + `react-native-pdf-text-extractor` (native `extractText(uri)`).
+- **WebView:** `react-native-webview` v13+ (renders template HTML for professional preview).
+- **ATS Scoring:** Category-level ATS scoring with keyword gap analysis and optimization suggestions.
 - **File picker:** `@react-native-documents/picker` (`pick` + `keepLocalCopy`).
 - **Resume input:** PDF upload OR plain-text paste (both normalized via `normalizeResumeText`).
 - **Env:** `react-native-dotenv` (whitelist: `GEMINI_API_KEY`, `APP_ENV`; path `.env`).
@@ -82,11 +84,15 @@ not line-proven. **Unknown** = explicitly not known.
 │   ├── screens/  Home,UploadResume,JobDescription,ExperienceEditor,AnalysisResult,FinalResumeOutput,Settings
 │   ├── store/useResumeStore.ts         # zustand: state + MMKV persistence
 │   ├── types/resume.ts                 # domain/persisted types
-│   ├── services/
-│   │   ├── ai/{geminiService,promptBuilder,types,analysisParser,
-│   │   │      finalOutputParser,experienceImprovementParser,analyzeResumeUseCase}.ts
-│   │   ├── pdf/{documentPicker,pdfExtractor}.ts
-│   │   └── storage/storage.ts          # MMKV wrapper
+  │   ├── services/
+  │   │   ├── ai/{geminiService,promptBuilder,types,analysisParser,
+  │   │   │      finalOutputParser,experienceImprovementParser,analyzeResumeUseCase}.ts
+  │   │   ├── pdf/{documentPicker,pdfExtractor,pdfGenerator,pdfTemplates,resumePdfExporter}.ts
+  │   │   └── storage/storage.ts          # MMKV wrapper
+  │   ├── templates/{renderResumeToHtml,templateRegistry,types,classic,modern,europass}.ts
+  │   ├── services/ats/{atsScorer,keywordOptimizer,atsAnalysis}.ts
+  │   ├── components/ats/ScoreIndicator.tsx
+  │   ├── components/resumeEditor/SuggestionsPanel.tsx
 │   └── utils/{text/normalizeResumeText, validation/{jobDescription,experience,finalOutput}}
 └── __tests__/                   # jest tests (mirror src names)
 ```
@@ -181,6 +187,25 @@ The actual, working capabilities of the app right now:
 **AI analysis (single Gemini call):**
 - ATS match score (0–100), missing keywords, suggested professional summary, suggested skills,
   experience improvements (Original/Improved pairs), ATS tips.
+
+**Resume preview & PDF export:**
+- Professional preview screen with 3 templates (Classic, Modern, Europass) rendered via
+  `react-native-webview` using the same HTML pipeline as PDF export.
+- PDF export from structured resume content (`ResumeContent`) via `resumePdfExporter.ts`
+  → `react-native-html-to-pdf` → platform share sheet.
+- Template selection persisted in `Resume.templateId` (defaults to `classic`).
+- Photo rendering in Modern/Europass templates (local `photoUri` only; PDF embedding is
+  platform-dependent and non-blocking).
+
+**ATS scoring & optimization:**
+- Category-level ATS scoring (keywords, skills, experience, education, formatting) with
+  weighted overall score via `src/services/ats/atsScorer.ts`.
+- Keyword gap analysis identifying missing keywords with suggested placement locations
+  via `src/services/ats/keywordOptimizer.ts`.
+- Optimization suggestions (add keyword, rephrase, add detail, reorder) with impact levels
+  and apply/dismiss actions.
+- "Optimize Resume" CTA on Analysis Result screen navigates to editor with suggestions panel.
+- Suggestions panel integrated into Resume Editor for one-click application.
 
 **Output & feedback:**
 - ATS score shown with explanation (AI-estimated, not scientific precision); "ATS" explained
@@ -433,6 +458,11 @@ Functional gaps that exist by current design (not bugs):
   but are not surfaced in the UI. A user cannot find them without deep navigation (Final Output)
   or at all (Experience AI).
 - **iOS build not verified this session** (Android build verified).
+- **PDF photo embedding is platform-dependent.** Modern/Europass templates include `<img>` tags
+  for local `photoUri`, but `react-native-html-to-pdf` may or may not render local file URIs
+  on iOS/Android. Export does not fail if the image is omitted.
+- **PDF link clickability is platform-dependent.** HTML `<a href>` links are preserved by
+  iOS PDFKit but may be dropped by Android `PdfDocument`.
 
 ## 13. Manual Actions
 

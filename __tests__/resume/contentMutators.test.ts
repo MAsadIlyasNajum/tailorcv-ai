@@ -1,4 +1,17 @@
-import {addSection, addEntry, removeEntry, reorderSections, reorderEntries, moveSkill, removeSkillGroup} from '../../src/utils/resume/contentMutators';
+import {
+  addSection,
+  addEntry,
+  removeEntry,
+  reorderSections,
+  reorderEntries,
+  moveSkill,
+  removeSkillGroup,
+  mergeSections,
+  moveContact,
+  reorderSkillGroup,
+  reorderSkill,
+  updatePersonalInfo,
+} from '../../src/utils/resume/contentMutators';
 import {createSection, createExperienceEntry, createSkillGroup, createSkillItem} from '../../src/utils/resume/sectionFactory';
 import type {ResumeContent} from '../../src/types/resume';
 
@@ -168,5 +181,172 @@ describe('contentMutators', () => {
     }
     expect(s.groups).toHaveLength(0);
     expect(s.uncategorized.map(k => k.id)).toEqual([skill.id]);
+  });
+
+  it('merges AI experience entries with existing entries (preserve + append)', () => {
+    const existing = createSection('experience', 0);
+    const existingEntries = (existing as any).entries as any[];
+    existingEntries.push({id: 'e1', company: 'Old Co', role: 'Dev', startDate: '', endDate: null, isCurrent: false, summary: '', responsibilities: [], achievements: [], technologies: [], links: [], order: 0});
+
+    const proposed = createSection('experience', 1);
+    const proposedEntries = (proposed as any).entries as any[];
+    proposedEntries.push({id: 'ai1', company: 'AI Co', role: 'AI Role', startDate: '', endDate: null, isCurrent: false, summary: '', responsibilities: [], achievements: [], technologies: [], links: [], order: 0});
+
+    const merged = mergeSections(existing, proposed);
+    if (merged.type !== 'experience') {
+      throw new Error('expected experience');
+    }
+    expect(merged.entries).toHaveLength(2);
+    expect(merged.entries[0].id).toBe('e1');
+    expect(merged.entries[1].company).toBe('AI Co');
+    expect(merged.entries[1].id).not.toBe('ai1');
+  });
+
+  it('merges AI skills with deduplication by name (case-insensitive)', () => {
+    const existing = createSection('skills', 0);
+    const existingSkills = existing as any;
+    existingSkills.groups = [createSkillGroup('Languages')];
+    existingSkills.uncategorized = [createSkillItem('JavaScript')];
+
+    const proposed = createSection('skills', 1);
+    const proposedSkills = proposed as any;
+    proposedSkills.groups = [createSkillGroup('Languages'), createSkillGroup('Frameworks')];
+    proposedSkills.uncategorized = [createSkillItem('javascript'), createSkillItem('Python')];
+
+    const merged = mergeSections(existing, proposed);
+    if (merged.type !== 'skills') {
+      throw new Error('expected skills');
+    }
+    expect(merged.uncategorized).toHaveLength(2);
+    expect(merged.uncategorized.map(s => s.name)).toContain('JavaScript');
+    expect(merged.uncategorized.map(s => s.name)).toContain('Python');
+    expect(merged.groups).toHaveLength(2);
+    expect(merged.groups[0].skills).toHaveLength(0);
+    expect(merged.groups[1].skills).toHaveLength(0);
+  });
+
+  it('merges AI personalInfo without wiping empty fields', () => {
+    const existing = createSection('personalInfo', 0);
+    const existingData = (existing as any).data as any;
+    existingData.fullName = 'Jane Doe';
+    existingData.emails = [{id: 'e1', value: 'jane@example.com'}];
+    existingData.phoneNumbers = [];
+    existingData.addresses = [];
+    existingData.links = [];
+
+    const proposed = createSection('personalInfo', 1);
+    const proposedData = (proposed as any).data as any;
+    proposedData.fullName = '';
+    proposedData.emails = [];
+    proposedData.phoneNumbers = [{id: 'ai1', value: '555'}];
+    proposedData.addresses = [];
+    proposedData.links = [];
+
+    const merged = mergeSections(existing, proposed);
+    if (merged.type !== 'personalInfo') {
+      throw new Error('expected personalInfo');
+    }
+    expect(merged.data.fullName).toBe('Jane Doe');
+    expect((merged.data as any).emails).toHaveLength(1);
+    expect((merged.data as any).phoneNumbers).toHaveLength(1);
+  });
+
+  it('leaves custom sections with different titles untouched', () => {
+    const existing = createSection('custom', 0);
+    (existing as any).title = 'Languages';
+    (existing as any).data = {content: 'Spanish', entries: []};
+
+    const proposed = createSection('custom', 1);
+    (proposed as any).title = 'Awards';
+    (proposed as any).data = {content: 'Nobel', entries: []};
+
+    const merged = mergeSections(existing, proposed);
+    if (merged.type !== 'custom') {
+      throw new Error('expected custom');
+    }
+    expect(merged.title).toBe('Languages');
+    expect((merged.data as any).content).toBe('Spanish');
+  });
+
+  it('moves a contact up and down within personalInfo', () => {
+    let content = baseContent();
+    const pi = createSection('personalInfo', 0);
+    content = addSection(content, pi);
+    content = updatePersonalInfo(content, pi.id, {
+      emails: [
+        {id: 'e1', value: 'a@example.com'},
+        {id: 'e2', value: 'b@example.com'},
+        {id: 'e3', value: 'c@example.com'},
+      ],
+    });
+    content = moveContact(content, pi.id, 1, 1);
+    const s = content.sections[0];
+    if (s.type !== 'personalInfo') {
+      throw new Error('expected personalInfo');
+    }
+    expect((s.data as any).emails[1].value).toBe('c@example.com');
+    expect((s.data as any).emails[2].value).toBe('b@example.com');
+
+    content = moveContact(content, pi.id, 2, -1);
+    const s2 = content.sections[0];
+    if (s2.type !== 'personalInfo') {
+      throw new Error('expected personalInfo');
+    }
+    expect((s2.data as any).emails[1].value).toBe('b@example.com');
+    expect((s2.data as any).emails[2].value).toBe('c@example.com');
+  });
+
+  it('reorders skill groups up and down', () => {
+    let content = baseContent();
+    const skills = createSection('skills', 0);
+    content = addSection(content, skills);
+    content = {
+      ...content,
+      sections: content.sections.map(s =>
+        s.type === 'skills'
+          ? {...s, groups: [createSkillGroup('A'), createSkillGroup('B'), createSkillGroup('C')]}
+          : s,
+      ),
+    };
+    content = reorderSkillGroup(content, skills.id, (content.sections[0] as any).groups[1].id, -1);
+    const s = content.sections[0];
+    if (s.type !== 'skills') {
+      throw new Error('expected skills');
+    }
+    expect(s.groups[0].title).toBe('B');
+    expect(s.groups[1].title).toBe('A');
+  });
+
+  it('reorders skills within a group and within uncategorized', () => {
+    let content = baseContent();
+    const skills = createSection('skills', 0);
+    content = addSection(content, skills);
+    const group = createSkillGroup('Lang');
+    const s1 = createSkillItem('A');
+    const s2 = createSkillItem('B');
+    const s3 = createSkillItem('C');
+    const u1 = createSkillItem('X');
+    const u2 = createSkillItem('Y');
+    content = {
+      ...content,
+      sections: content.sections.map(s =>
+        s.type === 'skills'
+          ? {...s, groups: [{...group, skills: [s1, s2, s3]}], uncategorized: [u1, u2]}
+          : s,
+      ),
+    };
+    content = reorderSkill(content, skills.id, group.id, s2.id, 1);
+    let s = content.sections[0];
+    if (s.type !== 'skills') {
+      throw new Error('expected skills');
+    }
+    expect(s.groups[0].skills.map(k => k.name)).toEqual(['A', 'C', 'B']);
+
+    content = reorderSkill(content, skills.id, null, u1.id, 1);
+    s = content.sections[0];
+    if (s.type !== 'skills') {
+      throw new Error('expected skills');
+    }
+    expect(s.uncategorized.map(k => k.name)).toEqual(['Y', 'X']);
   });
 });

@@ -106,6 +106,11 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+jest.mock('react-native-webview', () => ({
+  WebView: ({children}: {children?: React.ReactNode}) =>
+    require('react').createElement('WebView', null, children),
+}));
+
 import App from '../App';
 
 it('renders correctly', async () => {

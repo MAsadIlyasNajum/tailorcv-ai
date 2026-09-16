@@ -14,10 +14,10 @@ const navTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#F8FAFC',
+    background: '#FAF8FF',
     card: '#FFFFFF',
-    text: '#0F172A',
-    primary: '#2563EB',
+    text: '#131B2E',
+    primary: '#004AC6',
     border: '#E2E8F0',
   },
 };
@@ -50,7 +50,7 @@ function App(): React.JSX.Element {
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF8FF" />
       <NavigationContainer theme={navTheme}>
         <AppNavigator />
       </NavigationContainer>

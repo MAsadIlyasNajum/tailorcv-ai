@@ -23,6 +23,9 @@ interface AppButtonProps {
   textColor?: string;
   children?: React.ReactNode;
   compact?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: string;
 }
 
 export const AppButton = ({
@@ -37,6 +40,9 @@ export const AppButton = ({
   textColor,
   children,
   compact = false,
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityRole,
 }: AppButtonProps): React.JSX.Element => {
   const isDisabled = disabled || loading;
 
@@ -60,14 +66,18 @@ export const AppButton = ({
   ];
 
   const content = loading ? (
-    <ActivityIndicator
+    <  ActivityIndicator
       animating
       size="small"
-      color={mode === 'contained' ? '#FFFFFF' : '#2563EB'}
+      color={mode === 'contained' ? '#FFFFFF' : '#004AC6'}
     />
   ) : (
     <>
-      {icon ? <View style={styles.icon}>{icon}</View> : null}
+      {icon ? (
+        <View style={styles.icon}>
+          {typeof icon === 'string' ? <Text>{icon}</Text> : icon}
+        </View>
+      ) : null}
       <Text style={textStyle}>{label ?? children}</Text>
     </>
   );
@@ -76,6 +86,10 @@ export const AppButton = ({
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      accessible={!!accessibilityLabel}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole={accessibilityRole as any}
       style={({pressed}) => [
         buttonStyle,
         pressed && styles.pressed,
@@ -88,10 +102,10 @@ export const AppButton = ({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'transparent',
-    minHeight: 50,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
@@ -101,12 +115,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contained: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: '#004AC6',
+    borderColor: '#004AC6',
   },
   outlined: {
     backgroundColor: 'transparent',
-    borderColor: '#2563EB',
+    borderColor: '#004AC6',
   },
   text: {
     backgroundColor: 'transparent',
@@ -136,20 +150,21 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   textBase: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
+    fontFamily: 'Inter',
   },
   containedText: {
     color: '#FFFFFF',
   },
   outlinedText: {
-    color: '#2563EB',
+    color: '#004AC6',
   },
   textModeText: {
-    color: '#2563EB',
+    color: '#004AC6',
   },
   disabledText: {
-    color: '#64748B',
+    color: '#737686',
   },
 });

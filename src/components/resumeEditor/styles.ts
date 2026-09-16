@@ -64,6 +64,17 @@ export const editorStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  headerAction: {
+    minWidth: 32,
+    minHeight: 32,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  headerActionsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
   content: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -153,5 +164,30 @@ export const editorStyles = StyleSheet.create({
     fontSize: 14,
     color: editorColors.muted,
     lineHeight: 20,
+  },
+  emptyStateCard: {
+    borderTopColor: editorColors.accent,
+    borderTopWidth: 3,
+    backgroundColor: '#F0FDFA',
+  },
+  editorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  editorTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: editorColors.text,
+  },
+  editorSubtitle: {
+    fontSize: 13,
+    color: editorColors.muted,
+  },
+  saveIndicator: {
+    fontSize: 12,
+    color: editorColors.muted,
   },
 });

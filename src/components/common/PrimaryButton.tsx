@@ -9,6 +9,9 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   icon?: React.ReactNode;
   fullWidth?: boolean;
+  mode?: 'contained' | 'outlined' | 'text';
+  bgColor?: string;
+  textColor?: string;
 }
 
 export const PrimaryButton = ({
@@ -18,6 +21,9 @@ export const PrimaryButton = ({
   disabled = false,
   icon,
   fullWidth = true,
+  mode = 'contained',
+  bgColor,
+  textColor,
 }: PrimaryButtonProps): React.JSX.Element => {
   const isDisabled = disabled || loading;
 
@@ -26,11 +32,13 @@ export const PrimaryButton = ({
       <AppButton
         label={label}
         onPress={onPress}
-        mode="contained"
+        mode={mode}
         disabled={isDisabled}
         loading={loading}
         icon={icon}
         fullWidth={fullWidth}
+        textColor={textColor}
+        style={bgColor ? {backgroundColor: bgColor} : undefined}
       />
     </View>
   );
@@ -45,3 +53,4 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
 });
+

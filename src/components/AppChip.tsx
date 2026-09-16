@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
+import {colors} from '../app/theme/designTokens';
 
 interface AppChipProps {
   children: React.ReactNode;
@@ -17,28 +18,30 @@ export const AppChip = ({children, compact = false, style}: AppChipProps): React
 
 const styles = StyleSheet.create({
   chip: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
+    backgroundColor: colors.blueTint,
+    borderRadius: 9999,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: colors.blueTintLight,
   },
   compact: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   text: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#1D4ED8',
+    color: colors.primary,
     lineHeight: 18,
+    fontFamily: 'Inter',
   },
   compactText: {
     fontSize: 12,
     lineHeight: 16,
+    fontFamily: 'Inter',
   },
 });

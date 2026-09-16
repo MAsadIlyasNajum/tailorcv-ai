@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleProp, StyleSheet, Text, TextInput, View, ViewStyle} from 'react-native';
+import {colors} from '../app/theme/designTokens';
 
 interface AppTextInputProps {
   value?: string;
@@ -16,6 +17,8 @@ interface AppTextInputProps {
   autoCorrect?: boolean;
   textAlignVertical?: 'auto' | 'top' | 'bottom' | 'center';
   label?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: string;
 }
 
 export const AppTextInput = ({
@@ -33,8 +36,10 @@ export const AppTextInput = ({
   autoCorrect = false,
   textAlignVertical = 'auto',
   label,
+  accessibilityHint,
+  accessibilityRole,
 }: AppTextInputProps): React.JSX.Element => {
-  const minHeight = multiline ? (numberOfLines || 3) * 24 : dense ? 40 : 56;
+  const minHeight = multiline ? (numberOfLines || 3) * 24 : dense ? 40 : 48;
 
   return (
     <View style={[styles.wrapper, style]}>
@@ -43,7 +48,7 @@ export const AppTextInput = ({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={colors.textQuaternary}
         multiline={multiline}
         numberOfLines={numberOfLines}
         editable={!disabled}
@@ -52,6 +57,10 @@ export const AppTextInput = ({
         autoCapitalize={autoCapitalize}
         autoCorrect={autoCorrect}
         textAlignVertical={textAlignVertical}
+        accessible={!!label}
+        accessibilityLabel={label}
+        accessibilityHint={accessibilityHint}
+        accessibilityRole={accessibilityRole as any}
         style={[
           styles.input,
           multiline && styles.multiline,
@@ -69,20 +78,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#0F172A',
+    color: colors.textSecondary,
     marginBottom: 6,
+    fontFamily: 'Inter',
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 15,
-    color: '#0F172A',
+    fontSize: 14,
+    color: colors.textPrimary,
+    fontFamily: 'Inter',
   },
   multiline: {
     paddingTop: 12,
@@ -94,6 +105,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     backgroundColor: '#F1F5F9',
-    color: '#94A3B8',
+    color: colors.textQuaternary,
   },
 });

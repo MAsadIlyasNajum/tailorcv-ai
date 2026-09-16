@@ -5,6 +5,7 @@ import type {ExperienceEntry, ResumeSection} from '../../types/resume';
 import {SectionShell} from './SectionShell';
 import {RepeatableSectionEditor} from './RepeatableSectionEditor';
 import {RepeatableStrings} from './RepeatableStrings';
+import {ContactsEditor} from './ContactsEditor';
 import {useEntryOps, useResumeContent, useSectionOps} from './useResumeContent';
 import {
   createExperienceEntry,
@@ -121,6 +122,13 @@ export const ExperienceSection = ({resumeId, section, index, count}: SectionProp
               onChange={technologies => onChange({technologies})}
             />
             <DerivedProjects resumeId={resumeId} experienceId={entry.id} />
+            <ContactsEditor
+              label="Links"
+              isLink
+              values={entry.links ?? []}
+              valuePlaceholder="https://..."
+              onChange={links => onChange({links})}
+            />
           </View>
         )}
       />

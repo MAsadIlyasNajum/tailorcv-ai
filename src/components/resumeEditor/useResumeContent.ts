@@ -1,4 +1,5 @@
 import {useResumeStore} from '../../store/useResumeStore';
+import {useShallow} from 'zustand/react/shallow';
 import type {ResumeContent, ResumeEntry, ResumeSection} from '../../types/resume';
 import {
   addEntry,
@@ -12,6 +13,10 @@ import {
   setSectionVisible,
   updateEntry,
 } from '../../utils/resume/contentMutators';
+import {useRef} from 'react';
+
+const EMPTY_CONTENT: ResumeContent = {sections: []};
+const EMPTY_IDS: readonly string[] = Object.freeze([]);
 
 export const useResumeContent = (
   resumeId: string,
@@ -20,10 +25,14 @@ export const useResumeContent = (
     state.resumes.find(r => r.id === resumeId)?.content,
   );
   const updateResumeContent = useResumeStore(state => state.updateResumeContent);
-  const update = (fn: (prev: ResumeContent) => ResumeContent): void => {
+  const updateRef = useRef<((fn: (prev: ResumeContent) => ResumeContent) => void) | undefined>(undefined);
+  updateRef.current = (fn: (prev: ResumeContent) => ResumeContent): void => {
     updateResumeContent(resumeId, prev => fn(ensureContent(prev)));
   };
-  return {content: ensureContent(content), update};
+  const update = (fn: (prev: ResumeContent) => ResumeContent): void => {
+    updateRef.current!(fn);
+  };
+  return {content: content ?? EMPTY_CONTENT, update};
 };
 
 export const useSectionOps = (
@@ -34,9 +43,11 @@ export const useSectionOps = (
 ) => {
   const {update} = useResumeContent(resumeId);
   const orderIds = useResumeStore(
-    state =>
-      state.resumes.find(r => r.id === resumeId)?.content?.sections.map(s => s.id) ??
-      [],
+    useShallow(
+      state =>
+        state.resumes.find(r => r.id === resumeId)?.content?.sections.map(s => s.id) ??
+        EMPTY_IDS,
+    ),
   );
 
   const canMoveUp = index > 0;
@@ -66,14 +77,16 @@ export const useSectionOps = (
 
 export const useEntryOps = (resumeId: string, sectionId: string) => {
   const {update} = useResumeContent(resumeId);
-  const orderIds = useResumeStore(state => {
-    const resume = state.resumes.find(r => r.id === resumeId);
-    const sec = resume?.content?.sections.find(s => s.id === sectionId);
-    if (sec && 'entries' in sec) {
-      return sec.entries.map(e => e.id);
-    }
-    return [];
-  });
+  const orderIds = useResumeStore(
+    useShallow(state => {
+      const resume = state.resumes.find(r => r.id === resumeId);
+      const sec = resume?.content?.sections.find(s => s.id === sectionId);
+      if (sec && 'entries' in sec) {
+        return sec.entries.map(e => e.id);
+      }
+      return EMPTY_IDS;
+    }),
+  );
 
   return {
     add: (entry: ResumeEntry) => update(prev => addEntry(prev, sectionId, entry)),

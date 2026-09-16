@@ -6,12 +6,14 @@ import type {NativeStackNavigationProp, NativeStackScreenProps} from '@react-nav
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ScreenContainer} from '../components/common/ScreenContainer';
+import {ScoreIndicator} from '../components/ats/ScoreIndicator';
 import {useResumeStore} from '../store/useResumeStore';
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ROUTES} from '../constants/routes';
 import {trackEvent} from '../services/analytics/analytics';
 import {runFinalOutputGeneration} from '../services/ai/analyzeResumeUseCase';
 import {calculateWeightedKeywordCoverage} from '../utils/validation/keywordCoverage';
+import {calculateAtsAnalysis} from '../services/ats/atsAnalysis';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.ANALYSIS_RESULT>;
 
@@ -25,6 +27,7 @@ export const AnalysisResultScreen = ({route}: Props): React.JSX.Element => {
   const isGeneratingFinalOutput = useResumeStore(state => state.isGeneratingFinalOutput);
   const finalOutputError = useResumeStore(state => state.finalOutputError);
   const setFinalOutputError = useResumeStore(state => state.setFinalOutputError);
+  const resumes = useResumeStore(state => state.resumes);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   const analysisId = route?.params?.analysisId ?? currentAnalysisId;
@@ -32,6 +35,18 @@ export const AnalysisResultScreen = ({route}: Props): React.JSX.Element => {
     () => analysisResults.find(r => r.id === analysisId) ?? null,
     [analysisResults, analysisId],
   );
+
+  const resume = useMemo(
+    () => resumes.find(r => r.id === result?.resumeId) ?? null,
+    [resumes, result?.resumeId],
+  );
+
+  const atsAnalysis = useMemo(() => {
+    if (!result || !resume?.content) {
+      return null;
+    }
+    return calculateAtsAnalysis(resume.content, result);
+  }, [result, resume?.content]);
 
   const keywordCoverage = useMemo(() => {
     if (!result) {
@@ -140,7 +155,12 @@ export const AnalysisResultScreen = ({route}: Props): React.JSX.Element => {
         <AppCard style={styles.card}>
           <AppCard.Title title="Resume Match" subtitle="AI-estimated alignment with this job description" />
           <AppCard.Content>
-            <Text style={styles.score}>{viewModel.matchScore}%</Text>
+            <ScoreIndicator
+              score={viewModel.matchScore}
+              breakdown={atsAnalysis?.scoreBreakdown}
+              showBreakdown={!!atsAnalysis}
+              size="large"
+            />
             {keywordCoverage !== null ? (
               <Text style={styles.coverageText}>Keyword Coverage: {keywordCoverage}%</Text>
             ) : null}
@@ -290,6 +310,12 @@ export const AnalysisResultScreen = ({route}: Props): React.JSX.Element => {
         ) : null}
 
         <View style={styles.footerActions}>
+          {resume?.content ? (
+            <PrimaryButton
+              label="Optimize Resume"
+              onPress={() => navigation.navigate(ROUTES.RESUME_EDITOR as never, {resumeId: resume.id} as never)}
+            />
+          ) : null}
           <PrimaryButton label="Edit Suggestions" onPress={() => navigation.navigate(ROUTES.EDIT_SUGGESTIONS, {analysisId: result?.id})} />
           {hasFinalOutput ? (
             <PrimaryButton

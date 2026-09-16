@@ -11,6 +11,8 @@ import {
   removeSkill,
   removeSkillGroup,
   renameSkillGroup,
+  reorderSkillGroup,
+  reorderSkill,
 } from '../../utils/resume/contentMutators';
 import {DEFAULT_SECTION_LABELS} from '../../utils/resume/sectionFactory';
 import {editorColors, editorStyles} from './styles';
@@ -63,46 +65,73 @@ export const SkillsSection = ({resumeId, section, index, count}: SectionProps): 
       onToggleVisible={ops.toggleVisible}
       onRemove={ops.remove}>
       <View style={editorStyles.fieldGap}>
-        <Text style={editorStyles.groupTitle}>Skills (no group)</Text>
-        <View style={styles.chips}>
-          {section.uncategorized.map(skill => (
-            <View key={skill.id} style={styles.chip}>
-              <Text style={editorStyles.chipText}>{skill.name}</Text>
-              <AppButton
-                mode="text"
-                compact
-                onPress={() => setMoveId(moveId === skill.id ? null : skill.id)}>
-                Move
-              </AppButton>
-              <AppButton
-                mode="text"
-                compact
-                textColor={editorColors.danger}
-                onPress={() => update(prev => removeSkill(prev, section.id, skill.id))}>
-                ×
-              </AppButton>
-            </View>
-          ))}
-        </View>
-        {moveId ? (
-          <View style={styles.chips}>
-            <Text style={editorStyles.emptyHint}>Move to:</Text>
+        <View style={editorStyles.row}>
+          <Text style={styles.uncategorizedTitle}>Skills (no group)</Text>
+          {section.groups.length > 0 && (
             <AppButton
-              mode="outlined"
+              mode="text"
               compact
-              onPress={() => {
-                update(prev => moveSkill(prev, section.id, moveId, null));
-                setMoveId(null);
-              }}>
-              Uncategorized
+              onPress={() => setMoveId(moveId === 'uncategorized' ? null : 'uncategorized')}
+              accessibilityLabel="Move uncategorized skills"
+              accessibilityHint="Move uncategorized skills to a group">
+              Move
             </AppButton>
+          )}
+        </View>
+        {section.uncategorized.length === 0 ? (
+          <Text style={editorStyles.emptyHint}>No uncategorized skills yet.</Text>
+        ) : (
+          <View style={styles.chips}>
+            {section.uncategorized.map((skill, skillIndex) => (
+              <View key={skill.id} style={styles.skillRow}>
+                <Text style={editorStyles.chipText}>{skill.name}</Text>
+                <AppButton
+                  mode="text"
+                  compact
+                  style={editorStyles.headerAction}
+                  disabled={skillIndex === 0}
+                  onPress={() => update(prev => reorderSkill(prev, section.id, null, skill.id, -1))}
+                  accessibilityLabel="Move skill up"
+                  accessibilityHint="Move this skill earlier in the list">
+                  ↑
+                </AppButton>
+                <AppButton
+                  mode="text"
+                  compact
+                  style={editorStyles.headerAction}
+                  disabled={skillIndex === section.uncategorized.length - 1}
+                  onPress={() => update(prev => reorderSkill(prev, section.id, null, skill.id, 1))}
+                  accessibilityLabel="Move skill down"
+                  accessibilityHint="Move this skill later in the list">
+                  ↓
+                </AppButton>
+                <AppButton
+                  mode="text"
+                  compact
+                  style={editorStyles.headerAction}
+                  textColor={editorColors.danger}
+                  onPress={() => update(prev => removeSkill(prev, section.id, skill.id))}
+                  accessibilityLabel="Remove skill"
+                  accessibilityHint={`Remove ${skill.name}`}>
+                  ×
+                </AppButton>
+              </View>
+            ))}
+          </View>
+        )}
+        {moveId === 'uncategorized' && section.groups.length > 0 ? (
+          <View style={styles.chips}>
+            <Text style={editorStyles.emptyHint}>Move to group:</Text>
             {section.groups.map(group => (
               <AppButton
                 key={group.id}
                 mode="outlined"
                 compact
                 onPress={() => {
-                  update(prev => moveSkill(prev, section.id, moveId, group.id));
+                  const firstUncategorized = section.uncategorized[0];
+                  if (firstUncategorized) {
+                    update(prev => moveSkill(prev, section.id, firstUncategorized.id, group.id));
+                  }
                   setMoveId(null);
                 }}>
                 {group.title}
@@ -125,9 +154,9 @@ export const SkillsSection = ({resumeId, section, index, count}: SectionProps): 
         </View>
       </View>
 
-      {section.groups.map(group => (
+      {section.groups.map((group, _groupIndex) => (
         <View key={group.id} style={editorStyles.groupCard}>
-          <View style={editorStyles.groupHeader}>
+          <View style={styles.groupHeaderRow}>
             <View style={editorStyles.flexField}>
               <AppTextInput
                 value={group.title}
@@ -135,34 +164,89 @@ export const SkillsSection = ({resumeId, section, index, count}: SectionProps): 
                 dense
               />
             </View>
+            <View style={styles.groupHeaderRow}>
+              <AppButton
+                mode="text"
+                compact
+                style={editorStyles.headerAction}
+                disabled={_groupIndex === 0}
+                onPress={() => update(prev => reorderSkillGroup(prev, section.id, group.id, -1))}
+                accessibilityLabel="Move group up"
+                accessibilityHint="Move this group earlier">
+                ↑
+              </AppButton>
+              <AppButton
+                mode="text"
+                compact
+                style={editorStyles.headerAction}
+                disabled={_groupIndex === section.groups.length - 1}
+                onPress={() => update(prev => reorderSkillGroup(prev, section.id, group.id, 1))}
+                accessibilityLabel="Move group down"
+                accessibilityHint="Move this group later">
+                ↓
+              </AppButton>
+            </View>
             <AppButton
               mode="text"
               compact
+              style={editorStyles.headerAction}
               textColor={editorColors.danger}
-              onPress={() => update(prev => removeSkillGroup(prev, section.id, group.id))}>
-              Remove group
+              onPress={() => update(prev => removeSkillGroup(prev, section.id, group.id))}
+              accessibilityLabel="Remove group"
+              accessibilityHint={`Remove ${group.title} group`}>
+              Remove
             </AppButton>
           </View>
-          <View style={styles.chips}>
-            {group.skills.map(skill => (
-              <View key={skill.id} style={styles.chip}>
-                <Text style={editorStyles.chipText}>{skill.name}</Text>
-                <AppButton
-                  mode="text"
-                  compact
-                  onPress={() => update(prev => moveSkill(prev, section.id, skill.id, null))}>
-                  Move
-                </AppButton>
-                <AppButton
-                  mode="text"
-                  compact
-                  textColor={editorColors.danger}
-                  onPress={() => update(prev => removeSkill(prev, section.id, skill.id))}>
-                  ×
-                </AppButton>
-              </View>
-            ))}
-          </View>
+          {group.skills.length === 0 ? (
+            <Text style={editorStyles.emptyHint}>No skills in this group yet.</Text>
+          ) : (
+            <View style={styles.chips}>
+              {group.skills.map((skill, skillIndex) => (
+                <View key={skill.id} style={styles.skillRow}>
+                  <Text style={editorStyles.chipText}>{skill.name}</Text>
+                  <AppButton
+                    mode="text"
+                    compact
+                    style={editorStyles.headerAction}
+                    disabled={skillIndex === 0}
+                    onPress={() => update(prev => reorderSkill(prev, section.id, group.id, skill.id, -1))}
+                    accessibilityLabel="Move skill up"
+                    accessibilityHint="Move this skill earlier in the group">
+                    ↑
+                  </AppButton>
+                  <AppButton
+                    mode="text"
+                    compact
+                    style={editorStyles.headerAction}
+                    disabled={skillIndex === group.skills.length - 1}
+                    onPress={() => update(prev => reorderSkill(prev, section.id, group.id, skill.id, 1))}
+                    accessibilityLabel="Move skill down"
+                    accessibilityHint="Move this skill later in the group">
+                    ↓
+                  </AppButton>
+                  <AppButton
+                    mode="text"
+                    compact
+                    style={editorStyles.headerAction}
+                    onPress={() => update(prev => moveSkill(prev, section.id, skill.id, null))}
+                    accessibilityLabel="Move to uncategorized"
+                    accessibilityHint="Move this skill to uncategorized">
+                    Move
+                  </AppButton>
+                  <AppButton
+                    mode="text"
+                    compact
+                    style={editorStyles.headerAction}
+                    textColor={editorColors.danger}
+                    onPress={() => update(prev => removeSkill(prev, section.id, skill.id))}
+                    accessibilityLabel="Remove skill"
+                    accessibilityHint={`Remove ${skill.name}`}>
+                    ×
+                  </AppButton>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       ))}
 
@@ -190,12 +274,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  chip: {
+  skillRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EFF6FF',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    gap: 2,
+  },
+  groupHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  uncategorizedTitle: {
+    flex: 1,
   },
 });

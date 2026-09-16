@@ -1,7 +1,7 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Text, View} from 'react-native';
+import {View, StyleSheet, Text} from 'react-native';
 import {useRoute, type RouteProp} from '@react-navigation/native';
 
 import {ROUTES} from '../../constants/routes';
@@ -20,6 +20,9 @@ import {ResumePreviewScreen} from '../../screens/ResumePreviewScreen';
 import {ResumeExtractionReviewScreen} from '../../screens/ResumeExtractionReviewScreen';
 import {SettingsScreen} from '../../screens/SettingsScreen';
 import {UploadResumeScreen} from '../../screens/UploadResumeScreen';
+
+import {colors, typography, spacing, borderRadius, shadows} from '../theme/designTokens';
+import {BottomTabBar, IconSymbol} from '../components';
 
 export type AppStackParamList = {
   [ROUTES.HOME]: undefined;
@@ -43,44 +46,70 @@ export type AppStackParamList = {
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<AppStackParamList>();
 
-const TAB_ICONS: Record<string, {outline: string; focused: string}> = {
-  [ROUTES.HOME]: {outline: '⌂', focused: '⌂'},
-  [ROUTES.RESUMES]: {outline: '☰', focused: '☰'},
-  [ROUTES.HISTORY]: {outline: '◷', focused: '◷'},
-  [ROUTES.SETTINGS]: {outline: '⚙', focused: '⚙'},
-};
-
-const TabBarIcon = ({focused, color, size}: {focused: boolean; color: string; size: number}): React.JSX.Element => {
-  const route = useRoute<RouteProp<AppStackParamList>>();
-  const routeName = route?.name ?? ROUTES.HOME;
-  const icons = TAB_ICONS[routeName] ?? {outline: '•', focused: '•'};
-  const iconName = focused ? icons.focused : icons.outline;
-
-  return (
-    <View style={styles.tabIcon}>
-      <Text style={[styles.tabIconText, {color, fontSize: size}, focused && styles.tabIconTextFocused]}>
-        {iconName}
-      </Text>
-    </View>
-  );
-};
+const TAB_ITEMS: {key: string; label: string; icon: React.ReactNode; focusedIcon: React.ReactNode; pro?: boolean}[] = [
+  {key: ROUTES.HOME, label: 'Home', icon: <IconSymbol name="home" size={22} color={colors.textTertiary} />, focusedIcon: <IconSymbol name="home" size={22} color={colors.primaryDark} />},
+  {key: ROUTES.RESUMES, label: 'Resumes', icon: <IconSymbol name="resumes" size={22} color={colors.textTertiary} />, focusedIcon: <IconSymbol name="resumes" size={22} color={colors.primaryDark} />},
+  {key: ROUTES.HISTORY, label: 'ATS History', icon: <IconSymbol name="ats" size={22} color={colors.textTertiary} />, focusedIcon: <IconSymbol name="ats" size={22} color={colors.primaryDark} />},
+  {key: ROUTES.SETTINGS, label: 'Profile', icon: <IconSymbol name="profile" size={22} color={colors.textTertiary} />, focusedIcon: <IconSymbol name="profile" size={22} color={colors.primaryDark} />},
+];
 
 const MainTabs = (): React.JSX.Element => {
-  const screenOptions = React.useMemo(() => ({
-    headerShown: false,
-    tabBarStyle: styles.tabBar,
-    tabBarActiveTintColor: '#2563EB',
-    tabBarInactiveTintColor: '#64748B',
-    tabBarLabelStyle: styles.tabBarLabel,
-    tabBarIcon: TabBarIcon,
-  }), []);
+  const [activeKey, setActiveKey] = React.useState<string>(ROUTES.HOME);
 
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
-      <Tab.Screen name={ROUTES.HOME} component={HomeScreen} options={{tabBarLabel: 'Home'}} />
-      <Tab.Screen name={ROUTES.RESUMES} component={ResumesScreen} options={{tabBarLabel: 'Resumes'}} />
-      <Tab.Screen name={ROUTES.HISTORY} component={HistoryScreen} options={{tabBarLabel: 'History'}} />
-      <Tab.Screen name={ROUTES.SETTINGS} component={SettingsScreen} options={{tabBarLabel: 'Settings'}} />
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          height: 64,
+          paddingBottom: 8,
+          paddingTop: 8,
+          elevation: 8,
+          shadowColor: colors.shadowColor,
+          shadowOffset: {width: 0, height: -2},
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+        },
+      }}>
+      <Tab.Screen
+        name={ROUTES.HOME}
+        component={HomeScreen}
+        options={{tabBarLabel: 'Home'}}
+        listeners={{state: e => {
+          const route = e.target?.split(':').pop();
+          if (route) setActiveKey(route);
+        } as any}}
+      />
+      <Tab.Screen
+        name={ROUTES.RESUMES}
+        component={ResumesScreen}
+        options={{tabBarLabel: 'Resumes'}}
+        listeners={{state: e => {
+          const route = e.target?.split(':').pop();
+          if (route) setActiveKey(route);
+        } as any}}
+      />
+      <Tab.Screen
+        name={ROUTES.HISTORY}
+        component={HistoryScreen}
+        options={{tabBarLabel: 'ATS History'}}
+        listeners={{state: e => {
+          const route = e.target?.split(':').pop();
+          if (route) setActiveKey(route);
+        } as any}}
+      />
+      <Tab.Screen
+        name={ROUTES.SETTINGS}
+        component={SettingsScreen}
+        options={{tabBarLabel: 'Profile'}}
+        listeners={{state: e => {
+          const route = e.target?.split(':').pop();
+          if (route) setActiveKey(route);
+        } as any}}
+      />
     </Tab.Navigator>
   );
 };
@@ -90,9 +119,13 @@ export const AppNavigator = (): React.JSX.Element => {
     <Stack.Navigator
       initialRouteName={ROUTES.MAIN_TABS}
       screenOptions={{
-        headerTintColor: '#0F172A',
-        headerTitleStyle: {fontWeight: '700'},
-        contentStyle: {backgroundColor: '#F8FAFC'},
+        headerTintColor: colors.textPrimary,
+        headerTitleStyle: {fontWeight: '700', fontFamily: 'Inter'},
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerShadowVisible: false,
+        contentStyle: {backgroundColor: colors.background},
       }}>
       <Stack.Screen
         name="MainTabs"
@@ -102,7 +135,7 @@ export const AppNavigator = (): React.JSX.Element => {
       <Stack.Screen
         name={ROUTES.UPLOAD_RESUME}
         component={UploadResumeScreen}
-        options={{title: 'Upload Resume'}}
+        options={{title: 'Save CV'}}
       />
       <Stack.Screen
         name={ROUTES.RESUME_DETAIL}
@@ -156,36 +189,4 @@ export const AppNavigator = (): React.JSX.Element => {
       />
     </Stack.Navigator>
   );
-};
-
-const styles = {
-  tabBar: {
-    backgroundColor: '#FFFFFF',
-    borderTopColor: '#E2E8F0',
-    borderTopWidth: 1,
-    height: 72,
-    paddingBottom: 12,
-    paddingTop: 8,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: -2},
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  tabBarLabel: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    marginTop: 4,
-  },
-  tabIcon: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  tabIconText: {
-    fontSize: 22,
-    fontWeight: '400' as const,
-  },
-  tabIconTextFocused: {
-    color: '#2563EB',
-  },
 };

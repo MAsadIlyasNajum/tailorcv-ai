@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
+import {colors} from '../app/theme/designTokens';
 
 interface AppDividerProps {
   style?: StyleProp<ViewStyle>;
@@ -12,7 +13,7 @@ export const AppDivider = ({style}: AppDividerProps): React.JSX.Element => {
 const styles = StyleSheet.create({
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.border,
     marginVertical: 12,
   },
 });

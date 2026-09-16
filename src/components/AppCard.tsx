@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
+import {colors} from '../app/theme/designTokens';
 
 interface AppCardProps {
   children: React.ReactNode;
@@ -45,14 +46,14 @@ export {AppCardContent, AppCardTitle};
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 14,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    marginBottom: 12,
     overflow: 'hidden',
   },
   content: {
@@ -67,13 +68,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.textPrimary,
     lineHeight: 24,
+    fontFamily: 'Inter',
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748B',
+    color: colors.textSecondary,
     marginTop: 2,
     lineHeight: 20,
+    fontFamily: 'Inter',
   },
 });

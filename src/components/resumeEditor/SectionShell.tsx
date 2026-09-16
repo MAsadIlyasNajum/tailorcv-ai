@@ -70,10 +70,12 @@ export const SectionShell = ({
           </AppButton>
           {removable ? (
             <AppButton
-              mode="text"
+              mode="outlined"
               compact
               textColor={editorColors.danger}
-              onPress={onRemove}>
+              onPress={onRemove}
+              accessibilityLabel="Delete section"
+              accessibilityHint="Permanently remove this section">
               Delete
             </AppButton>
           ) : null}

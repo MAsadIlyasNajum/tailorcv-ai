@@ -12,6 +12,8 @@ interface ContactsEditorProps<T extends ContactValue | AddressValue | LinkValue>
   valueLabel?: string;
   isLink?: boolean;
   showLabelField?: boolean;
+  onMoveUp?: (index: number) => void;
+  onMoveDown?: (index: number) => void;
 }
 
 export const ContactsEditor = <T extends ContactValue | AddressValue | LinkValue>({
@@ -21,6 +23,8 @@ export const ContactsEditor = <T extends ContactValue | AddressValue | LinkValue
   valuePlaceholder = 'Value',
   isLink = false,
   showLabelField = true,
+  onMoveUp,
+  onMoveDown,
 }: ContactsEditorProps<T>): React.JSX.Element => {
   const list = values.length ? values : ([] as unknown as T[]);
   const update = (index: number, patch: Partial<T>): void => {
@@ -58,11 +62,33 @@ export const ContactsEditor = <T extends ContactValue | AddressValue | LinkValue
               dense
             />
           </View>
+          {onMoveUp ? (
+            <AppButton
+              mode="text"
+              compact
+              disabled={index === 0}
+              onPress={() => onMoveUp(index)}
+              accessibilityLabel="Move up"
+              accessibilityHint="Move this contact earlier"
+            />
+          ) : null}
+          {onMoveDown ? (
+            <AppButton
+              mode="text"
+              compact
+              disabled={index === values.length - 1}
+              onPress={() => onMoveDown(index)}
+              accessibilityLabel="Move down"
+              accessibilityHint="Move this contact later"
+            />
+          ) : null}
           <AppButton
             mode="text"
             compact
             textColor={editorColors.danger}
-            onPress={() => remove(index)}>
+            onPress={() => remove(index)}
+            accessibilityLabel="Remove"
+            accessibilityHint={`Remove this ${label.toLowerCase().replace(/s$/, '')}`}>
             Remove
           </AppButton>
         </View>

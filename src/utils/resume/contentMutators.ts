@@ -1,4 +1,5 @@
 import type {
+  BaseSection,
   CertificationEntry,
   CustomSectionData,
   EducationEntry,
@@ -8,6 +9,7 @@ import type {
   ProjectEntry,
   ResumeContent,
   ResumeSection,
+  SkillGroup,
   SkillItem,
 } from '../../types/resume';
 import {
@@ -18,6 +20,7 @@ import {
   createSkillItem,
   createSkillGroup,
 } from './sectionFactory';
+import {createId} from './ids';
 
 const reindexSections = (sections: ResumeSection[]): ResumeSection[] =>
   [...sections].sort((a, b) => a.order - b.order);
@@ -441,6 +444,174 @@ export const renameSection = (
     ...section,
     title: section.type === 'custom' ? title : section.title,
   });
+};
+
+const isMeaningful = (value: unknown): boolean => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+};
+
+const mergeData = <T extends Record<string, unknown>>(existing: T, proposed: T): T => {
+  const result = {...existing};
+  for (const key of Object.keys(proposed) as (keyof T)[]) {
+    const pVal = proposed[key];
+    if (isMeaningful(pVal)) {
+      result[key] = pVal as T[keyof T];
+    }
+  }
+  return result;
+};
+
+export const mergeSections = (existing: ResumeSection, proposed: ResumeSection): ResumeSection => {
+  if (existing.type !== proposed.type) return existing;
+
+  switch (existing.type) {
+    case 'personalInfo':
+    case 'intro': {
+      const eData = (existing as unknown as {data: Record<string, unknown>}).data;
+      const pData = (proposed as unknown as {data: Record<string, unknown>}).data;
+      return {...existing, data: mergeData(eData, pData)} as ResumeSection;
+    }
+    case 'experience':
+    case 'projects':
+    case 'education':
+    case 'certifications': {
+      const eEntries = (existing as unknown as {entries: any[]}).entries;
+      const pEntries = (proposed as unknown as {entries: any[]}).entries;
+      const appended = pEntries.map(entry => ({
+        ...entry,
+        id: createId('entry'),
+        order: nextEntryOrder(eEntries),
+      }));
+      return {...existing, entries: [...eEntries, ...appended]} as ResumeSection;
+    }
+    case 'skills': {
+      const eSkills = existing as {groups: SkillGroup[]; uncategorized: SkillItem[]};
+      const pSkills = proposed as {groups: SkillGroup[]; uncategorized: SkillItem[]};
+
+      const mergedUncategorized = [...eSkills.uncategorized];
+      for (const s of pSkills.uncategorized) {
+        if (!mergedUncategorized.some(e => e.name.toLowerCase() === s.name.toLowerCase())) {
+          mergedUncategorized.push(s);
+        }
+      }
+
+      const mergedGroups = [...eSkills.groups];
+      for (const pg of pSkills.groups) {
+        const idx = mergedGroups.findIndex(g => g.title.toLowerCase() === pg.title.toLowerCase());
+        if (idx >= 0) {
+          const mergedSkills = [...mergedGroups[idx].skills];
+          for (const s of pg.skills) {
+            if (!mergedSkills.some(e => e.name.toLowerCase() === s.name.toLowerCase())) {
+              mergedSkills.push(s);
+            }
+          }
+          mergedGroups[idx] = {...mergedGroups[idx], skills: mergedSkills};
+        } else {
+          mergedGroups.push(pg);
+        }
+      }
+
+      return {...existing, uncategorized: mergedUncategorized, groups: mergedGroups} as ResumeSection;
+    }
+    case 'custom': {
+      const eCustom = existing as {title?: string; data: CustomSectionData};
+      const pCustom = proposed as {title?: string; data: CustomSectionData};
+      if (eCustom.title?.toLowerCase() !== pCustom.title?.toLowerCase()) return existing;
+      return {
+        ...existing,
+        data: {
+          ...eCustom.data,
+          ...(isMeaningful(pCustom.data.content) ? {content: pCustom.data.content} : {}),
+          entries: [...(eCustom.data.entries ?? []), ...(pCustom.data.entries ?? [])],
+        },
+      } as ResumeSection;
+    }
+  }
+};
+
+const isPersonalInfo = (section: ResumeSection): section is BaseSection & {type: 'personalInfo'; data: PersonalInfoData} =>
+  section.type === 'personalInfo';
+
+export const moveContact = <T extends {id: string}>(
+  content: ResumeContent,
+  sectionId: string,
+  index: number,
+  dir: -1 | 1,
+): ResumeContent => {
+  const section = findSection(content, sectionId);
+  if (!section || !isPersonalInfo(section)) return content;
+
+  const listField = 'emails' in section.data ? 'emails'
+    : 'phoneNumbers' in section.data ? 'phoneNumbers'
+    : 'addresses' in section.data ? 'addresses'
+    : 'links' in section.data ? 'links'
+    : null;
+
+  if (!listField) return content;
+
+  const list = (section.data as unknown as Record<string, T[]>)[listField];
+  const j = index + dir;
+  if (index < 0 || j < 0 || j >= list.length) return content;
+
+  const next = [...list];
+  [next[index], next[j]] = [next[j], next[index]];
+  return replaceSection(content, {...section, data: {...section.data, [listField]: next}} as ResumeSection);
+};
+
+export const reorderSkillGroup = (
+  content: ResumeContent,
+  sectionId: string,
+  groupId: string,
+  dir: -1 | 1,
+): ResumeContent => {
+  const section = findSection(content, sectionId);
+  if (!section || section.type !== 'skills') return content;
+
+  const groups = section.groups;
+  const idx = groups.findIndex(g => g.id === groupId);
+  const j = idx + dir;
+  if (idx < 0 || j < 0 || j >= groups.length) return content;
+
+  const next = [...groups];
+  [next[idx], next[j]] = [next[j], next[idx]];
+  return replaceSection(content, {...section, groups: next});
+};
+
+export const reorderSkill = (
+  content: ResumeContent,
+  sectionId: string,
+  groupId: string | null,
+  skillId: string,
+  dir: -1 | 1,
+): ResumeContent => {
+  const section = findSection(content, sectionId);
+  if (!section || section.type !== 'skills') return content;
+
+  if (groupId === null) {
+    const uncategorized = section.uncategorized;
+    const idx = uncategorized.findIndex(s => s.id === skillId);
+    const j = idx + dir;
+    if (idx < 0 || j < 0 || j >= uncategorized.length) return content;
+    const next = [...uncategorized];
+    [next[idx], next[j]] = [next[j], next[idx]];
+    return replaceSection(content, {...section, uncategorized: next});
+  }
+
+  const groups = section.groups;
+  const groupIdx = groups.findIndex(g => g.id === groupId);
+  if (groupIdx < 0) return content;
+  const skills = groups[groupIdx].skills;
+  const skillIdx = skills.findIndex(s => s.id === skillId);
+  const j = skillIdx + dir;
+  if (skillIdx < 0 || j < 0 || j >= skills.length) return content;
+  const nextSkills = [...skills];
+  [nextSkills[skillIdx], nextSkills[j]] = [nextSkills[j], nextSkills[skillIdx]];
+  const nextGroups = [...groups];
+  nextGroups[groupIdx] = {...nextGroups[groupIdx], skills: nextSkills};
+  return replaceSection(content, {...section, groups: nextGroups});
 };
 
 export {createExperienceEntry, createProjectEntry, createEducationEntry, createCertificationEntry};

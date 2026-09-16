@@ -1,10 +1,13 @@
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ScreenContainer} from '../components/common/ScreenContainer';
 import {AppCard} from '../components/index';
+import {AppButton} from '../components/index';
+import {SaveIndicator} from '../components/common/SaveIndicator';
+import {SuggestionsPanel} from '../components/resumeEditor/SuggestionsPanel';
 import {useResumeStore} from '../store/useResumeStore';
 import {runStructuredExtraction} from '../services/ai/extractResumeUseCase';
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
@@ -13,6 +16,7 @@ import type {ResumeSection, SectionType} from '../types/resume';
 import {useResumeContent} from '../components/resumeEditor/useResumeContent';
 import {addSection, ensureContent} from '../utils/resume/contentMutators';
 import {createSection, nextOrder} from '../utils/resume/sectionFactory';
+import {calculateAtsAnalysis} from '../services/ats/atsAnalysis';
 import {SectionAdder} from '../components/resumeEditor/SectionAdder';
 import {PersonalInfoSection} from '../components/resumeEditor/PersonalInfoSection';
 import {IntroSection} from '../components/resumeEditor/IntroSection';
@@ -22,6 +26,7 @@ import {EducationSection} from '../components/resumeEditor/EducationSection';
 import {SkillsSection} from '../components/resumeEditor/SkillsSection';
 import {CertificationsSection} from '../components/resumeEditor/CertificationsSection';
 import {CustomSection} from '../components/resumeEditor/CustomSection';
+import {editorStyles} from '../components/resumeEditor/styles';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.RESUME_EDITOR>;
 
@@ -62,8 +67,59 @@ export const ResumeEditorScreen = ({route}: Props): React.JSX.Element => {
   const updateResumeContent = useResumeStore(state => state.updateResumeContent);
   const isExtracting = useResumeStore(state => state.isExtracting);
   const extractionError = useResumeStore(state => state.extractionError);
+  const analysisResults = useResumeStore(state => state.analysisResults);
+  const currentAnalysisId = useResumeStore(state => state.currentAnalysisId);
+  const applyOptimizationSuggestion = useResumeStore(state => state.applyOptimizationSuggestion);
+  const dismissOptimizationSuggestion = useResumeStore(state => state.dismissOptimizationSuggestion);
   const {content} = useResumeContent(resumeId);
   const [showRaw, setShowRaw] = useState(false);
+
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevUpdatedAt = useRef(resume?.updatedAt ?? 0);
+
+  const analysisResult = useMemo(
+    () => analysisResults.find(r => r.id === currentAnalysisId) ?? null,
+    [analysisResults, currentAnalysisId],
+  );
+
+  const optimizationSuggestions = useMemo(() => {
+    if (!analysisResult || !content) {
+      return [];
+    }
+    const analysis = calculateAtsAnalysis(content, analysisResult);
+    const appliedIds = resume?.appliedSuggestions || [];
+    return analysis.optimizationSuggestions.map(s => ({
+      ...s,
+      applied: appliedIds.includes(s.id),
+    }));
+  }, [analysisResult, content, resume?.appliedSuggestions]);
+
+  const handleApplySuggestion = (suggestion: import('../types/resume').OptimizationSuggestion): void => {
+    applyOptimizationSuggestion(resumeId, suggestion);
+  };
+
+  const handleDismissSuggestion = (suggestion: import('../types/resume').OptimizationSuggestion): void => {
+    dismissOptimizationSuggestion(resumeId, suggestion.id);
+  };
+
+  useEffect(() => {
+    if (resume && resume.updatedAt !== prevUpdatedAt.current) {
+      prevUpdatedAt.current = resume.updatedAt;
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => setSavedAt(Date.now()), 300);
+    }
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resume?.updatedAt]);
+
+  const showSaved = savedAt !== null && Date.now() - savedAt < 1500;
 
   const handleExtract = async (): Promise<void> => {
     const proposal = await runStructuredExtraction();
@@ -77,6 +133,9 @@ export const ResumeEditorScreen = ({route}: Props): React.JSX.Element => {
     [content.sections],
   );
 
+  const isMinimalResume = content.sections.length === 2 &&
+    content.sections.every(s => s.type === 'personalInfo' || s.type === 'intro');
+
   if (!resume) {
     return (
       <ScreenContainer>
@@ -88,9 +147,9 @@ export const ResumeEditorScreen = ({route}: Props): React.JSX.Element => {
     );
   }
 
-  const handleAddSection = (type: SectionType): void => {
+  const handleAddSection = (type: SectionType, title?: string): void => {
     const ordered = ensureContent(resume?.content).sections;
-    updateResumeContent(resumeId, prev => addSection(prev, createSection(type, nextOrder(ordered))));
+    updateResumeContent(resumeId, prev => addSection(prev, createSection(type, nextOrder(ordered), title ? {title} : {})));
   };
 
   const rawText = resume.text?.trim();
@@ -99,8 +158,22 @@ export const ResumeEditorScreen = ({route}: Props): React.JSX.Element => {
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
         <AppCard>
-          <AppCard.Title title={resume.name} subtitle="Structured Resume Editor" />
+          <View style={editorStyles.editorHeader}>
+            <View>
+              <Text style={editorStyles.editorTitle}>{resume.name}</Text>
+              <Text style={editorStyles.editorSubtitle}>Structured Resume Editor</Text>
+            </View>
+            <SaveIndicator visible={showSaved} />
+          </View>
         </AppCard>
+
+        {optimizationSuggestions.length > 0 ? (
+          <SuggestionsPanel
+            suggestions={optimizationSuggestions}
+            onApply={handleApplySuggestion}
+            onDismiss={handleDismissSuggestion}
+          />
+        ) : null}
 
         {rawText ? (
           <AppCard>
@@ -114,11 +187,46 @@ export const ResumeEditorScreen = ({route}: Props): React.JSX.Element => {
           </AppCard>
         ) : null}
 
-        {sections.map((section, index) => (
-          <View key={section.id}>
-            {renderSection(resumeId, section, index, sections.length)}
-          </View>
-        ))}
+        {isMinimalResume ? (
+          <AppCard style={editorStyles.emptyStateCard}>
+            <Text style={styles.emptyTitle}>Start building your resume</Text>
+            <Text style={styles.emptyBody}>
+              Add sections to create a structured resume that you can edit, preview, and export.
+            </Text>
+            <View style={styles.emptyActions}>
+              <AppButton
+                mode="outlined"
+                compact
+                onPress={() => handleAddSection('experience')}>
+                + Experience
+              </AppButton>
+              <AppButton
+                mode="outlined"
+                compact
+                onPress={() => handleAddSection('projects')}>
+                + Projects
+              </AppButton>
+              <AppButton
+                mode="outlined"
+                compact
+                onPress={() => handleAddSection('education')}>
+                + Education
+              </AppButton>
+              <AppButton
+                mode="outlined"
+                compact
+                onPress={() => handleAddSection('skills')}>
+                + Skills
+              </AppButton>
+            </View>
+          </AppCard>
+        ) : (
+          sections.map((section, index) => (
+            <View key={section.id}>
+              {renderSection(resumeId, section, index, sections.length)}
+            </View>
+          ))
+        )}
 
         <SectionAdder sections={sections} onAdd={handleAddSection} />
 
@@ -182,6 +290,23 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: '#B91C1C',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  emptyBody: {
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  emptyActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   actions: {
     gap: 12,

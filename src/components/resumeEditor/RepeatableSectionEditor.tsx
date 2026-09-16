@@ -54,41 +54,56 @@ export const RepeatableSectionEditor = <T extends {id: string; order: number}>({
               <Text style={editorStyles.entryTitle} numberOfLines={1}>
                 {entryLabel(entry)}
               </Text>
-              <View style={editorStyles.headerActions}>
-                <AppButton
-                  mode="text"
-                  compact
-                  disabled={index === 0}
-                  onPress={() => onMove(entry.id, -1)}>
-                  ↑
-                </AppButton>
-                <AppButton
-                  mode="text"
-                  compact
-                  disabled={index === entries.length - 1}
-                  onPress={() => onMove(entry.id, 1)}>
-                  ↓
-                </AppButton>
-                <AppButton
-                  mode="text"
-                  compact
-                  onPress={() => setCollapsedId(collapsed ? null : entry.id)}>
-                  {collapsed ? 'Show' : 'Hide'}
-                </AppButton>
-                <AppButton
-                  mode="text"
-                  compact
-                  onPress={() => onDuplicate(entry.id)}>
-                  Duplicate
-                </AppButton>
-                <AppButton
-                  mode="text"
-                  compact
-                  textColor={editorColors.danger}
-                  onPress={() => onRemove(entry.id)}>
-                  Delete
-                </AppButton>
-              </View>
+            </View>
+            <View style={editorStyles.headerActionsWrap}>
+              <AppButton
+                mode="text"
+                compact
+                style={editorStyles.headerAction}
+                disabled={index === 0}
+                onPress={() => onMove(entry.id, -1)}
+                accessibilityLabel="Move up"
+                accessibilityHint="Move this entry earlier">
+                ↑
+              </AppButton>
+              <AppButton
+                mode="text"
+                compact
+                style={editorStyles.headerAction}
+                disabled={index === entries.length - 1}
+                onPress={() => onMove(entry.id, 1)}
+                accessibilityLabel="Move down"
+                accessibilityHint="Move this entry later">
+                ↓
+              </AppButton>
+              <AppButton
+                mode="text"
+                compact
+                style={editorStyles.headerAction}
+                onPress={() => setCollapsedId(collapsed ? null : entry.id)}
+                accessibilityLabel={collapsed ? 'Expand' : 'Collapse'}
+                accessibilityHint={collapsed ? 'Show entry details' : 'Hide entry details'}>
+                {collapsed ? 'Expand' : 'Collapse'}
+              </AppButton>
+              <AppButton
+                mode="text"
+                compact
+                style={editorStyles.headerAction}
+                onPress={() => onDuplicate(entry.id)}
+                accessibilityLabel="Duplicate"
+                accessibilityHint="Create a copy of this entry">
+                Duplicate
+              </AppButton>
+              <AppButton
+                mode="text"
+                compact
+                style={editorStyles.headerAction}
+                textColor={editorColors.danger}
+                onPress={() => onRemove(entry.id)}
+                accessibilityLabel="Delete"
+                accessibilityHint="Permanently remove this entry">
+                Delete
+              </AppButton>
             </View>
             {!collapsed ? (
               <View style={editorStyles.fieldGap}>

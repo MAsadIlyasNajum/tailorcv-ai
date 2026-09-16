@@ -3,3 +3,34 @@ export {AppTextInput} from './AppTextInput';
 export {AppCard, AppCardContent, AppCardTitle} from './AppCard';
 export {AppDivider} from './AppDivider';
 export {AppChip} from './AppChip';
+
+export {PrimaryButton} from './common/PrimaryButton';
+export {ScreenContainer} from './common/ScreenContainer';
+export {AtsScoreBadge} from './common/AtsScoreBadge';
+export {AtsScoreGauge} from './common/AtsScoreGauge';
+export {ResumeCard} from './common/ResumeCard';
+export {MetricPill} from './common/MetricPill';
+export {SaveIndicator} from './common/SaveIndicator';
+
+// Shared presentation components
+export {AppHeader} from './shared/AppHeader';
+export {BottomTabBar} from './shared/BottomTabBar';
+export {AtsRadialGauge} from './shared/AtsRadialGauge';
+export {ScorePill} from './shared/ScorePill';
+export {IconSymbol} from './shared/IconSymbol';
+export {ResumeCardV2} from './shared/ResumeCardV2';
+export {AtsAuditCard} from './shared/AtsAuditCard';
+export {ProLockedCard} from './shared/ProLockedCard';
+export {FeatureChecklist} from './shared/FeatureChecklist';
+export {Stepper} from './shared/Stepper';
+export {EmptyState} from './shared/EmptyState';
+export {LoadingState} from './shared/LoadingState';
+export {Toast} from './shared/Toast';
+export {TabSwitcher} from './shared/TabSwitcher';
+export {ProBadge} from './shared/ProBadge';
+export {RecommendationCard} from './shared/RecommendationCard';
+export {TailorQueueItem} from './shared/TailorQueueItem';
+export {AiTipsPill} from './shared/AiTipsPill';
+export {ProfileStrengthCard} from './shared/ProfileStrengthCard';
+export {SectionShellV2} from './shared/SectionShellV2';
+export {AddSectionChips} from './shared/AddSectionChips';

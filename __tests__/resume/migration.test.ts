@@ -134,4 +134,18 @@ describe('resume migration', () => {
     const twice = normalizeAssociations(once);
     expect(JSON.stringify(once)).toBe(JSON.stringify(twice));
   });
+
+  it('deserializes PersonalInfoData without firstName/lastName as undefined', () => {
+    const blob = {
+      fullName: 'Jane Doe',
+      emails: [],
+      phoneNumbers: [],
+      addresses: [],
+      links: [],
+    };
+    const data = blob as any;
+    expect(data.firstName).toBeUndefined();
+    expect(data.lastName).toBeUndefined();
+    expect(data.fullName).toBe('Jane Doe');
+  });
 });

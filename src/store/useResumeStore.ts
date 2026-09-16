@@ -5,14 +5,17 @@ import type {
   AnalysisResult,
   FinalResumeOutput,
   JobApplication,
+  OptimizationSuggestion,
   ProfessionalExperience,
   Resume,
   ResumeContent,
+  ResumeSection,
   SectionType,
 } from '../types/resume';
 import {defaultSectionsForNewResume} from '../utils/resume/sectionFactory';
 import {buildContentFromLegacy} from '../utils/resume/migration';
 import {createId} from '../utils/resume/ids';
+import {mergeSections} from '../utils/resume/contentMutators';
 
 interface ResumeStore {
   resumes: Resume[];
@@ -50,6 +53,9 @@ interface ResumeStore {
   removeAnalysisResult: (id: string) => void;
   setCurrentAnalysis: (id: string | null) => void;
 
+  // Legacy APIs operating on the `professionalExperiences` array.
+  // These are separate from the modern structured editor (`content.sections`).
+  // New features should use content mutators / `useResumeContent` instead.
   addProfessionalExperience: (experience: ProfessionalExperience) => void;
   updateProfessionalExperience: (
     id: string,
@@ -71,6 +77,9 @@ interface ResumeStore {
 
   setFinalResumeOutput: (result: FinalResumeOutput | null) => void;
   clearFinalResumeOutput: () => void;
+
+  applyOptimizationSuggestion: (resumeId: string, suggestion: OptimizationSuggestion) => void;
+  dismissOptimizationSuggestion: (resumeId: string, suggestionId: string) => void;
 
   hydrateLatest: () => void;
   clearAll: () => void;
@@ -251,6 +260,8 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     persistCollections(get());
   },
 
+  // Legacy: operates on `resume.professionalExperiences`, not `content.sections`.
+  // Used by the legacy ExperienceEditorScreen. New flows should use content mutators.
   addProfessionalExperience: experience => {
     const currentResumeId = get().currentResumeId;
     if (!currentResumeId) {
@@ -270,6 +281,8 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     set({resumes: next});
     persistCollections(get());
   },
+
+  // Legacy: operates on `resume.professionalExperiences`, not `content.sections`.
   updateProfessionalExperience: (id, nextExperience) => {
     const currentResumeId = get().currentResumeId;
     if (!currentResumeId) {
@@ -293,6 +306,8 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     set({resumes: next});
     persistCollections(get());
   },
+
+  // Legacy: operates on `resume.professionalExperiences`, not `content.sections`.
   removeProfessionalExperience: id => {
     const currentResumeId = get().currentResumeId;
     if (!currentResumeId) {
@@ -363,29 +378,26 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     }
 
     const prev = resume.content ?? {sections: []};
-    const remaining = prev.sections.filter(
-      s =>
-        !toAccept.some(a =>
-          a.type === s.type &&
-          (s.type !== 'custom' || (a as {title?: string}).title === (s as {title?: string}).title),
-        ),
-    );
 
-    const merged = [...remaining];
+    const merged: ResumeSection[] = [...prev.sections];
     for (const accepted of toAccept) {
       if (accepted.type === 'custom') {
-        const idx = merged.findIndex(
-          s => s.type === 'custom' && (s as {title?: string}).title === (accepted as {title?: string}).title,
-        );
-        if (idx >= 0) {
-          merged[idx] = accepted;
+        const acceptedTitle = accepted.title?.trim();
+        const existingIdx = merged.findIndex(s => {
+          if (s.type !== 'custom') return false;
+          const existingTitle = s.title?.trim();
+          if (!acceptedTitle || !existingTitle) return false;
+          return existingTitle.toLowerCase() === acceptedTitle.toLowerCase();
+        });
+        if (existingIdx >= 0) {
+          merged[existingIdx] = mergeSections(merged[existingIdx], accepted);
         } else {
           merged.push(accepted);
         }
       } else {
         const idx = merged.findIndex(s => s.type === accepted.type);
         if (idx >= 0) {
-          merged[idx] = accepted;
+          merged[idx] = mergeSections(merged[idx], accepted);
         } else {
           merged.push(accepted);
         }
@@ -436,6 +448,41 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
   clearFinalResumeOutput: () => {
     set({finalResumeOutput: null});
     storage.saveFinalResumeOutput(null);
+  },
+
+  applyOptimizationSuggestion: (resumeId, suggestion) => {
+    const resume = get().resumes.find(r => r.id === resumeId);
+    if (!resume) {
+      return;
+    }
+
+    const appliedSuggestions = [...(resume.appliedSuggestions || []), suggestion.id];
+    const scoreHistory = resume.scoreHistory || [];
+
+    set({
+      resumes: get().resumes.map(r =>
+        r.id === resumeId ? {...r, appliedSuggestions, scoreHistory} : r,
+      ),
+    });
+
+    persistCollections(get());
+  },
+
+  dismissOptimizationSuggestion: (resumeId, suggestionId) => {
+    const resume = get().resumes.find(r => r.id === resumeId);
+    if (!resume) {
+      return;
+    }
+
+    const appliedSuggestions = [...(resume.appliedSuggestions || []), suggestionId];
+
+    set({
+      resumes: get().resumes.map(r =>
+        r.id === resumeId ? {...r, appliedSuggestions} : r,
+      ),
+    });
+
+    persistCollections(get());
   },
 
   hydrateLatest: () => {
