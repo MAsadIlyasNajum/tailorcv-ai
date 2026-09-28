@@ -7,6 +7,7 @@ import {ScreenContainer} from '../components/common/ScreenContainer';
 import {useResumeStore} from '../store/useResumeStore';
 import type {ProfessionalExperience} from '../types/resume';
 import {validateProfessionalExperience} from '../utils/validation/experienceValidation';
+import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
 
 type ExperienceDraft = {
   id: string;
@@ -200,7 +201,7 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
                   onPress={handleCreateExperience}
                   fullWidth={false}
                 />
-                <AppButton mode="text" onPress={() => setDraft(EMPTY_EXPERIENCE)}>
+                <AppButton mode="text" fullWidth={false} onPress={() => setDraft(EMPTY_EXPERIENCE)}>
                   Cancel
                 </AppButton>
               </View>
@@ -232,8 +233,8 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
                   </Text>
                   <Text style={styles.roleSummary}>{experience.summary}</Text>
                   <View style={styles.savedActions}>
-                    <AppButton mode="text" onPress={() => handleEdit(experience)}>Edit</AppButton>
-                    <AppButton mode="text" onPress={() => handleDelete(experience.id)}>Delete</AppButton>
+                    <AppButton mode="text" fullWidth={false} onPress={() => handleEdit(experience)}>Edit</AppButton>
+                    <AppButton mode="text" fullWidth={false} onPress={() => handleDelete(experience.id)}>Delete</AppButton>
                   </View>
                 </View>
               ))}
@@ -263,17 +264,18 @@ export const ExperienceEditorScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 14,
+    gap: spacing.md,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
+    ...shadows.card,
   },
   form: {
-    gap: 12,
+    gap: spacing.md,
   },
   inlineRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   flexField: {
     flex: 1,
@@ -285,9 +287,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   switchLabel: {
-    fontSize: 14,
-    color: '#0F172A',
+    ...typography.body,
     fontWeight: '600',
+    color: colors.textPrimary,
   },
   textArea: {
     minHeight: 120,
@@ -298,9 +300,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...typography.h4,
+    color: colors.textPrimary,
   },
   bulletRow: {
     gap: 4,
@@ -311,42 +312,44 @@ const styles = StyleSheet.create({
   buttonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   validation: {
-    fontSize: 13,
-    color: '#B91C1C',
+    ...typography.body,
     lineHeight: 20,
+    color: colors.red,
   },
   savedRole: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
     gap: 6,
   },
   savedRoleHeader: {
     gap: 2,
   },
   roleTitle: {
-    fontSize: 16,
+    ...typography.bodyLarge,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.textPrimary,
   },
   roleCompany: {
-    fontSize: 13,
-    color: '#475569',
+    ...typography.body,
+    color: colors.textSecondary,
   },
   roleMeta: {
+    ...typography.mono,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textTertiary,
   },
   roleSummary: {
-    fontSize: 13,
-    color: '#334155',
+    ...typography.body,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   savedActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
 });

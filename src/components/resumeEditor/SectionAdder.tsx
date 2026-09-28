@@ -3,7 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import {AppButton} from '../index';
 import type {ResumeSection, SectionType} from '../../types/resume';
 import {DEFAULT_SECTION_LABELS} from '../../utils/resume/sectionFactory';
-import {editorColors, editorStyles} from './styles';
+import {editorColors} from './styles';
 
 interface SectionAdderProps {
   sections: ResumeSection[];
@@ -47,11 +47,18 @@ export const SectionAdder = ({sections, onAdd}: SectionAdderProps): React.JSX.El
   }
 
   return (
-    <View style={[editorStyles.card, styles.wrapper]}>
-      <Text style={styles.heading}>Add section</Text>
+    <View style={styles.wrapper}>
+      <Text style={styles.heading}>Available Sections</Text>
+      <Text style={styles.subtitle}>Tap to add</Text>
       <View style={styles.chips}>
         {available.map(type => (
-          <AppButton key={type} mode="outlined" compact onPress={() => onAdd(type)}>
+          <AppButton
+            key={type}
+            mode="outlined"
+            compact
+            labelStyle={styles.chipLabel}
+            onPress={() => onAdd(type)}
+            style={styles.chipButton}>
             + {DEFAULT_SECTION_LABELS[type]}
           </AppButton>
         ))}
@@ -65,14 +72,23 @@ export const SectionAdder = ({sections, onAdd}: SectionAdderProps): React.JSX.El
                 key={title}
                 mode="outlined"
                 compact
+                labelStyle={styles.chipLabel}
                 disabled={existingTitles.has(title.toLowerCase())}
-                onPress={() => onAdd('custom', title)}>
+                onPress={() => onAdd('custom', title)}
+                style={styles.chipButton}>
                 + {title}
               </AppButton>
             ))}
           </View>
         </>
       )}
+      <AppButton
+        mode="text"
+        fullWidth
+        label="+ Add Custom Section"
+        onPress={() => onAdd('custom')}
+        style={styles.customButton}
+      />
     </View>
   );
 };
@@ -80,13 +96,21 @@ export const SectionAdder = ({sections, onAdd}: SectionAdderProps): React.JSX.El
 const styles = StyleSheet.create({
   wrapper: {
     gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: editorColors.border,
+  },
+  chipLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
   },
   heading: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: editorColors.text,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: editorColors.muted,
   },
   subheading: {
     fontSize: 13,
@@ -98,5 +122,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  chipButton: {
+    minHeight: 36,
+    borderRadius: 9999,
+    backgroundColor: editorColors.surface,
+    borderColor: editorColors.surface,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  customButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: '#F2F3FF',
+    borderColor: '#F2F3FF',
   },
 });

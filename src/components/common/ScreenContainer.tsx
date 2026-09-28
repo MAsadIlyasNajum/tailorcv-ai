@@ -30,7 +30,7 @@ export const ScreenContainer = ({
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoiding}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

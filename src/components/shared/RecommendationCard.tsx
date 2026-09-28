@@ -1,6 +1,6 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
+import {colors, typography, spacing, borderRadius, shadows} from '../../app/theme/designTokens';
 
 interface RecommendationCardProps {
   title: string;
@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   applyText: {
-    color: colors.surface,
     ...typography.body,
+    color: colors.surface,
     fontWeight: '600',
   },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
+import {colors, typography, spacing, shadows} from '../../app/theme/designTokens';
 import {IconSymbol} from './IconSymbol';
 
 interface AppHeaderProps {
@@ -19,6 +19,7 @@ export const AppHeader = ({
   leftIcon,
   onLeftPress,
   rightIcon,
+  onRightPress,
   subtitle,
   variant = 'default',
   style,
@@ -41,8 +42,8 @@ export const AppHeader = ({
           <View style={styles.actionButton} />
         )}
         <View style={styles.titleContainer}>
-          {title ? <Text style={styles.title} numberOfLines={1}>{title}</Text>}
-          {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>}
+          {title ? (<Text style={styles.title} numberOfLines={1}>{title}</Text>) : null}
+          {subtitle ? (<Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>) : null}
         </View>
         {rightIcon ? (
           <Pressable onPress={onRightPress} style={styles.actionButton} hitSlop={8}>

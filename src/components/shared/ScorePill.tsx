@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing} from '../app/theme/designTokens';
+import {colors} from '../../app/theme/designTokens';
 
 const SCORE_CONFIG: Record<string, {bg: string; text: string; label: string}> = {
   green: {bg: colors.greenStrong, text: colors.greenBadgeText, label: 'Strong'},

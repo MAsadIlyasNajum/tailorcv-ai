@@ -1,6 +1,6 @@
 import React from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing} from '../app/theme/designTokens';
+import {colors, typography, spacing} from '../../app/theme/designTokens';
 
 interface LoadingStateProps {
   message?: string;

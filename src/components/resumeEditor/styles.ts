@@ -1,15 +1,15 @@
 import {StyleSheet} from 'react-native';
 
 export const editorColors = {
-  primary: '#2563EB',
-  text: '#0F172A',
-  muted: '#64748B',
-  subtle: '#94A3B8',
-  border: '#E2E8F0',
+  primary: '#004AC6',
+  text: '#131B2E',
+  muted: '#434655',
+  subtle: '#737686',
+  border: '#E2E7FF',
   surface: '#FFFFFF',
-  background: '#F8FAFC',
-  danger: '#B91C1C',
-  accent: '#14B8A6',
+  background: '#FAF8FF',
+  danger: '#93000A',
+  accent: '#712AE2',
 };
 
 export const editorStyles = StyleSheet.create({
@@ -19,13 +19,13 @@ export const editorStyles = StyleSheet.create({
   },
   card: {
     backgroundColor: editorColors.surface,
-    borderRadius: 16,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 14,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    marginBottom: 10,
     overflow: 'hidden',
   },
   header: {
@@ -47,8 +47,10 @@ export const editorStyles = StyleSheet.create({
     fontWeight: '700',
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.07,
+    fontFamily: 'Inter',
     color: editorColors.text,
     flex: 1,
   },
@@ -76,9 +78,9 @@ export const editorStyles = StyleSheet.create({
     gap: 4,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 10,
   },
   row: {
     flexDirection: 'row',

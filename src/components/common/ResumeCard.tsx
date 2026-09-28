@@ -2,6 +2,7 @@ import React from 'react';
 import {GestureResponderEvent, StyleSheet, Text, View, Pressable} from 'react-native';
 import {colors} from '../../app/theme/designTokens';
 import type {Resume} from '../../types/resume';
+import {IconSymbol} from '../shared/IconSymbol';
 
 interface ResumeCardProps {
   resume: Resume;
@@ -69,7 +70,7 @@ export const ResumeCard = ({
       <View style={styles.cardContent}>
         <View style={styles.leftSection}>
           <View style={styles.iconContainer}>
-            <Text style={styles.icon}>📄</Text>
+            <IconSymbol name="document" size={18} color={colors.primaryDark} />
           </View>
           <View style={styles.textContainer}>
             <View style={styles.titleRow}>
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: colors.shadowColor,
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -118,8 +119,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   currentCard: {
-    borderWidth: 2,
-    borderColor: colors.primary,
+    backgroundColor: colors.surface,
   },
   cardContent: {
     flexDirection: 'row',
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 8,
-    backgroundColor: colors.blueTint,
+    backgroundColor: colors.primaryTintLighter,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -156,6 +156,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.textPrimary,
+    fontFamily: 'Inter',
+    lineHeight: 20,
+    letterSpacing: -0.07,
     flex: 1,
   },
   atsBadge: {
@@ -167,15 +170,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     lineHeight: 14,
+    letterSpacing: 0.44,
   },
   metadata: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '400',
-    color: colors.textTertiary,
-    lineHeight: 16,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   overflowButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: colors.primaryTintLighter,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginLeft: 8,
   },
   overflowIcon: {

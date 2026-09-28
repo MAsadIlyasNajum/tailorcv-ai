@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {Alert, StyleSheet, Text, View} from 'react-native';
-import {AppCard, AppDivider, AppTextInput} from '../components';
+import {AppCard, AppDivider, AppTextInput, InfoBanner} from '../components';
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
 import {ScreenContainer} from '../components/common/ScreenContainer';
@@ -9,6 +9,7 @@ import {extractTextFromPdfFile} from '../services/pdf/pdfExtractor';
 import {normalizeResumeText} from '../utils/text/normalizeResumeText';
 import {useResumeStore} from '../store/useResumeStore';
 import {trackEvent} from '../services/analytics/analytics';
+import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
 
 const MIN_PASTED_RESUME_LENGTH = 50;
 
@@ -162,7 +163,7 @@ export const UploadResumeScreen = (): React.JSX.Element => {
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
         <AppCard style={styles.card}>
-          <AppCard.Title title="Add Resume" subtitle="Upload a PDF or paste your resume text" />
+          <AppCard.Title title="Save CV" subtitle="Upload a PDF or paste your resume text" />
           <AppCard.Content>
             <PrimaryButton
               label={resumeMetadata ? 'Replace PDF' : 'Select PDF'}
@@ -199,7 +200,11 @@ export const UploadResumeScreen = (): React.JSX.Element => {
             <AppDivider style={styles.divider} />
 
             <Text style={styles.label}>Selected file</Text>
-            <Text style={styles.fileInfo}>{fileSizeLabel}</Text>
+            {resumeMetadata ? (
+              <InfoBanner title="Selected file" message={fileSizeLabel} tone="primary" />
+            ) : (
+              <Text style={styles.fileInfo}>{fileSizeLabel}</Text>
+            )}
 
             {extractionError ? (
               <Text style={styles.errorText}>{extractionError}</Text>
@@ -207,7 +212,11 @@ export const UploadResumeScreen = (): React.JSX.Element => {
 
             {resumeText ? (
               <View style={styles.extractedSection}>
-                <Text style={styles.extractedHeader}>Resume successfully processed.</Text>
+                <InfoBanner
+                  title="Resume successfully processed."
+                  message="Your resume text has been extracted and is ready to use."
+                  tone="success"
+                />
                 <PrimaryButton
                   label={showExtractedText ? 'Hide extracted text' : 'View extracted text'}
                   onPress={() => setShowExtractedText(value => !value)}
@@ -218,9 +227,11 @@ export const UploadResumeScreen = (): React.JSX.Element => {
                 ) : null}
               </View>
             ) : (
-              <Text style={styles.hintText}>
-                Select a PDF or paste your resume text above to begin.
-              </Text>
+              <InfoBanner
+                title="No PDF selected yet."
+                message="Select a PDF or paste your resume text above to begin."
+                tone="neutral"
+              />
             )}
           </AppCard.Content>
         </AppCard>
@@ -231,61 +242,46 @@ export const UploadResumeScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: 14,
+    gap: spacing.md,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
+    ...shadows.card,
   },
   divider: {
-    marginVertical: 12,
+    marginVertical: spacing.md,
   },
   label: {
-    fontSize: 14,
+    ...typography.body,
     fontWeight: '600',
-    color: '#0F172A',
-    marginTop: 8,
+    color: colors.textPrimary,
+    marginTop: spacing.sm,
   },
   fileInfo: {
-    fontSize: 14,
-    color: '#334155',
-    marginTop: 6,
-    marginBottom: 8,
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   errorText: {
-    fontSize: 13,
+    ...typography.body,
     lineHeight: 20,
-    color: '#B91C1C',
-    marginTop: 8,
-    marginBottom: 8,
+    color: colors.red,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   pasteInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     minHeight: 160,
-  },
-  pasteInputContent: {
-    minHeight: 160,
-    paddingTop: 12,
-    paddingBottom: 12,
   },
   extractedSection: {
-    marginTop: 12,
-    gap: 8,
-  },
-  extractedHeader: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#16A34A',
+    marginTop: spacing.md,
+    gap: spacing.sm,
   },
   extractedPreview: {
-    fontSize: 13,
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
     lineHeight: 20,
-    color: '#334155',
-    marginTop: 8,
-  },
-  hintText: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 20,
-    marginTop: 8,
   },
 });

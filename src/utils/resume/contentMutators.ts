@@ -540,17 +540,20 @@ export const moveContact = <T extends {id: string}>(
   sectionId: string,
   index: number,
   dir: -1 | 1,
+  field?: 'emails' | 'phoneNumbers' | 'addresses' | 'links',
 ): ResumeContent => {
   const section = findSection(content, sectionId);
   if (!section || !isPersonalInfo(section)) return content;
 
-  const listField = 'emails' in section.data ? 'emails'
-    : 'phoneNumbers' in section.data ? 'phoneNumbers'
-    : 'addresses' in section.data ? 'addresses'
-    : 'links' in section.data ? 'links'
-    : null;
+  const listField = field ?? (
+    'emails' in section.data ? 'emails'
+      : 'phoneNumbers' in section.data ? 'phoneNumbers'
+      : 'addresses' in section.data ? 'addresses'
+      : 'links' in section.data ? 'links'
+      : null
+  );
 
-  if (!listField) return content;
+  if (!listField || !(listField in section.data)) return content;
 
   const list = (section.data as unknown as Record<string, T[]>)[listField];
   const j = index + dir;

@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {Alert, StyleSheet, Text, View} from 'react-native';
-import {AppButton, AppCard, AppDivider, AppTextInput} from '../components';
+import {AppButton, AppCard, AppDivider, AppTextInput, IconSymbol, InfoBanner, SearchFilterBar} from '../components';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
@@ -9,6 +9,7 @@ import {useResumeStore} from '../store/useResumeStore';
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ROUTES} from '../constants/routes';
 import {trackEvent} from '../services/analytics/analytics';
+import {colors, shadows} from '../app/theme/designTokens';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.RESUMES>;
 
@@ -28,6 +29,30 @@ export const ResumesScreen = ({navigation}: Props): React.JSX.Element => {
 
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'pdf' | 'text'>('all');
+
+  const filteredResumes = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return sortedResumes.filter(resume => {
+      if (sourceFilter !== 'all' && resume.sourceType !== sourceFilter) {
+        return false;
+      }
+      if (query && !resume.name.toLowerCase().includes(query)) {
+        return false;
+      }
+      return true;
+    });
+  }, [sortedResumes, searchQuery, sourceFilter]);
+
+  const sourceFilters = useMemo(
+    () => [
+      {label: 'All', value: 'all'},
+      {label: 'PDF', value: 'pdf'},
+      {label: 'Text', value: 'text'},
+    ],
+    [],
+  );
 
   const handleSelect = (id: string): void => {
     setCurrentResume(id);
@@ -66,6 +91,15 @@ export const ResumesScreen = ({navigation}: Props): React.JSX.Element => {
     navigation.navigate(ROUTES.RESUME_DETAIL, {resumeId: id});
   };
 
+  const handleEditResume = (id: string): void => {
+    navigation.navigate(ROUTES.RESUME_EDITOR, {resumeId: id});
+  };
+
+  const handleTailorResume = (id: string): void => {
+    setCurrentResume(id);
+    navigation.navigate(ROUTES.JOB_DESCRIPTION);
+  };
+
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
     return date.toLocaleDateString(undefined, {
@@ -78,25 +112,47 @@ export const ResumesScreen = ({navigation}: Props): React.JSX.Element => {
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
-        <AppCard style={styles.headerCard}>
-          <AppCard.Content>
-            <Text style={styles.headerTitle}>My Resumes</Text>
-            <Text style={styles.headerSubtitle}>
-              {resumes.length === 0
-                ? 'Add your first resume to get started.'
-                : `You have ${resumes.length} resume${resumes.length === 1 ? '' : 's'}.`}
-            </Text>
-          </AppCard.Content>
-        </AppCard>
+        <View style={styles.topBar}>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title}>My Resumes</Text>
+            <View style={styles.countPill}>
+              <Text style={styles.countText}>{resumes.length}</Text>
+            </View>
+          </View>
+          <View style={styles.topBarAction}>
+            <AppButton
+              compact
+              fullWidth
+              mode="contained"
+              label="New Resume"
+              onPress={handleAddResume}
+              style={styles.topBarButton}
+            />
+          </View>
+        </View>
 
-        {sortedResumes.length === 0 ? (
+        <SearchFilterBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search by role, company, or keyword..."
+          filters={sourceFilters}
+          selectedFilter={sourceFilter}
+          onSelectFilter={value => setSourceFilter(value as 'all' | 'pdf' | 'text')}
+        />
+
+        <InfoBanner
+          tone="proTip"
+          title="Pro Workflow"
+          message="Keep one master resume, then create tailored versions for each role."
+        />
+
+        {filteredResumes.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No resumes yet.</Text>
-            <PrimaryButton label="Add Resume" onPress={handleAddResume} />
           </View>
         ) : (
           <View style={styles.list}>
-            {sortedResumes.map(resume => {
+            {filteredResumes.map(resume => {
               const isCurrent = resume.id === currentResumeId;
               const isRenaming = renamingId === resume.id;
 
@@ -136,13 +192,40 @@ export const ResumesScreen = ({navigation}: Props): React.JSX.Element => {
                     <AppDivider style={styles.itemDivider} />
 
                     <View style={styles.itemActions}>
-                      <AppButton mode="text" onPress={() => handleViewDetail(resume.id)}>
+                      <AppButton
+                        mode="outlined"
+                        fullWidth={false}
+                        onPress={() => handleEditResume(resume.id)}
+                        style={styles.editAction}
+                        labelStyle={styles.editActionLabel}
+                        textColor={colors.primaryDark}
+                        icon={<IconSymbol name="edit" size={14} color={colors.primaryDark} />}>
+                        Edit
+                      </AppButton>
+                      <AppButton
+                        mode="outlined"
+                        fullWidth={false}
+                        onPress={() => handleTailorResume(resume.id)}
+                        style={styles.tailorAction}
+                        labelStyle={styles.tailorActionLabel}
+                        textColor={colors.amberText}
+                        icon={<IconSymbol name="sparkle" size={15} color={colors.violet} />}>
+                        Tailor
+                      </AppButton>
+                    </View>
+
+                    <View style={styles.itemMetaActions}>
+                      <AppButton mode="text" fullWidth={false} onPress={() => handleViewDetail(resume.id)}>
                         View
                       </AppButton>
-                      <AppButton mode="text" onPress={() => handleStartRename(resume.id, resume.name)}>
+                      <AppButton mode="text" fullWidth={false} onPress={() => handleStartRename(resume.id, resume.name)}>
                         Rename
                       </AppButton>
-                      <AppButton mode="text" onPress={() => handleDelete(resume.id, resume.name)} textColor="#B91C1C">
+                      <AppButton
+                        mode="text"
+                        fullWidth={false}
+                        onPress={() => handleDelete(resume.id, resume.name)}
+                        textColor={colors.red}>
                         Delete
                       </AppButton>
                     </View>
@@ -183,18 +266,53 @@ const styles = StyleSheet.create({
   wrapper: {
     gap: 16,
   },
-  headerCard: {
-    borderRadius: 16,
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
+    minHeight: 48,
+    paddingRight: 141,
   },
-  headerTitle: {
-    fontSize: 22,
+  titleBlock: {
+    flex: 1,
+    minWidth: 180,
+    gap: 4,
+  },
+  topBarAction: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 125,
+  },
+  topBarButton: {
+    minHeight: 40,
+  },
+  countPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.blueTint,
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  countText: {
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+    letterSpacing: 0.44,
+    color: colors.textSecondary,
+  },
+  title: {
+    fontSize: 26,
     fontWeight: '700',
-    color: '#0F172A',
+    lineHeight: 34,
+    letterSpacing: -0.65,
+    fontFamily: 'Inter',
+    color: colors.textPrimary,
   },
-  headerSubtitle: {
+  subtitle: {
     fontSize: 14,
-    color: '#475569',
-    marginTop: 4,
+    color: colors.textSecondary,
   },
   emptyState: {
     gap: 16,
@@ -203,17 +321,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#64748B',
+    color: colors.textTertiary,
   },
   list: {
     gap: 12,
   },
   itemCard: {
-    borderRadius: 16,
+    borderRadius: 12,
   },
   activeCard: {
-    borderWidth: 2,
-    borderColor: '#2563EB',
+    backgroundColor: colors.surface,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -222,31 +339,72 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   itemTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24,
+    letterSpacing: -0.18,
+    fontFamily: 'Inter',
+    color: colors.textPrimary,
     flex: 1,
   },
   activeBadge: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: colors.blueTint,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 2,
+    borderRadius: 9999,
   },
   activeBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#166534',
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+    letterSpacing: 0.44,
+    color: colors.primaryDark,
   },
   itemMeta: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+    letterSpacing: 0.44,
+    color: colors.textTertiary,
     marginTop: 6,
   },
   itemDivider: {
     marginVertical: 12,
   },
   itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  editAction: {
+    minHeight: 40,
+    borderRadius: 8,
+    backgroundColor: colors.blueTint,
+    borderColor: colors.blueTint,
+    paddingHorizontal: 16,
+  },
+  editActionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    letterSpacing: -0.07,
+  },
+  tailorAction: {
+    minHeight: 40,
+    borderRadius: 8,
+    backgroundColor: colors.violetTint,
+    borderColor: colors.violetTint,
+    paddingHorizontal: 16,
+    ...shadows.card,
+  },
+  tailorActionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    letterSpacing: -0.07,
+  },
+  itemMetaActions: {
     flexDirection: 'row',
     gap: 8,
   },

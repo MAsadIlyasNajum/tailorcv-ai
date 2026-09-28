@@ -96,6 +96,17 @@ describe('personalInfo', () => {
     expect(data.lastName).toBeUndefined();
   });
 
+  it('editing fullName directly does not populate firstName/lastName', () => {
+    let content = baseContent();
+    const pi = createSection('personalInfo', 0);
+    content = addSection(content, pi);
+    content = updatePersonalInfo(content, pi.id, {fullName: 'Jane Doe'});
+    const data = (content.sections[0] as any).data;
+    expect(data.fullName).toBe('Jane Doe');
+    expect(data.firstName).toBeUndefined();
+    expect(data.lastName).toBeUndefined();
+  });
+
   it('UI fullName lifecycle: enter first/last, clear first, clear last, no stale fullName', () => {
     // Simulate the UI handleNameChange behavior
     let data: Record<string, unknown> = {};

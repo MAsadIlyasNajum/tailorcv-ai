@@ -5,13 +5,16 @@ import {colors} from '../app/theme/designTokens';
 interface AppChipProps {
   children: React.ReactNode;
   compact?: boolean;
+  tone?: 'default' | 'success' | 'danger';
   style?: StyleProp<ViewStyle>;
 }
 
-export const AppChip = ({children, compact = false, style}: AppChipProps): React.JSX.Element => {
+export const AppChip = ({children, compact = false, tone = 'default', style}: AppChipProps): React.JSX.Element => {
   return (
-    <View style={[styles.chip, compact && styles.compact, style]}>
-      <Text style={[styles.text, compact && styles.compactText]}>{children}</Text>
+    <View style={[styles.chip, compact && styles.compact, tone === 'success' && styles.success, tone === 'danger' && styles.danger, style]}>
+      <Text style={[styles.text, compact && styles.compactText, tone === 'success' && styles.successText, tone === 'danger' && styles.dangerText]}>
+        {children}
+      </Text>
     </View>
   );
 };
@@ -32,6 +35,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
   },
+  success: {
+    backgroundColor: colors.greenTint,
+    borderColor: colors.greenTint,
+  },
+  danger: {
+    backgroundColor: colors.redTint,
+    borderColor: colors.redTint,
+  },
   text: {
     fontSize: 13,
     fontWeight: '500',
@@ -43,5 +54,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontFamily: 'Inter',
+  },
+  successText: {
+    color: colors.greenText,
+  },
+  dangerText: {
+    color: colors.redText,
   },
 });

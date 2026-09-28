@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing, borderRadius} from '../app/theme/designTokens';
+import {colors, typography, spacing, shadows} from '../../app/theme/designTokens';
 
 interface Step {
   label: string;
@@ -25,10 +25,10 @@ export const Stepper = ({steps, style}: StepperProps): React.JSX.Element => {
           <View key={idx} style={styles.step}>
             <View style={styles.stepHeader}>
               <View style={[styles.dot, isCompleted && styles.dotDone, isCurrent && styles.dotCurrent, !isCompleted && !isCurrent && styles.dotFuture]}>
-                {isCompleted ? <Text style={styles.dotIcon}>✓</Text> : null}
+                {isCompleted ? <Text style={[styles.dotIcon, styles.dotIconDone]}>✓</Text> : null}
                 {isCurrent && !isCompleted ? <Text style={styles.dotIcon}>●</Text> : null}
               </View>
-              <Text style={[styles.stepLabel, isCurrent && styles.stepLabelCurrent]}>{step.label}</Text>
+              <Text style={[styles.stepLabel, isCompleted && styles.stepLabelDone, isCurrent && styles.stepLabelCurrent]}>{step.label}</Text>
             </View>
             {!isLast ? <View style={[styles.connector, isCompleted && styles.connectorDone]} /> : null}
           </View>
@@ -42,6 +42,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    ...shadows.card,
   },
   step: {
     flex: 1,
@@ -54,42 +59,48 @@ const styles = StyleSheet.create({
   dot: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primaryTintLight,
+    borderRadius: 9999,
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dotDone: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.greenLight,
   },
   dotCurrent: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
   },
   dotFuture: {
-    backgroundColor: colors.primaryTintLight,
+    backgroundColor: colors.border,
   },
   dotIcon: {
     color: colors.surface,
     fontSize: 14,
     fontWeight: '700',
   },
+  dotIconDone: {
+    color: colors.greenStrong,
+  },
   stepLabel: {
     ...typography.badge,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   stepLabelCurrent: {
+    color: colors.primaryDark,
+    fontWeight: '600',
+  },
+  stepLabelDone: {
     color: colors.textPrimary,
-    fontWeight: '700',
   },
   connector: {
     width: '100%',
     height: 2,
-    backgroundColor: colors.primaryTintLight,
+    backgroundColor: colors.border,
     marginTop: 14,
   },
   connectorDone: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.greenLight,
   },
 });
 

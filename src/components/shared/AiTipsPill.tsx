@@ -1,13 +1,13 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing, borderRadius} from '../app/theme/designTokens';
+import {colors, typography, spacing} from '../../app/theme/designTokens';
 
 interface AiTipsPillProps {
   tips: string[];
   style?: any;
 }
 
-export const AiTipsPill = ({tips, style}: AiTipsPillProps): React.JSX.Element => {
+export const AiTipsPill = ({tips, style}: AiTipsPillProps): React.JSX.Element | null => {
   if (!tips || tips.length === 0) return null;
 
   return (

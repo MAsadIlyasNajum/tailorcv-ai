@@ -1,15 +1,23 @@
 import React, {useMemo, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {AppButton, AppCard, AppTextInput} from '../components';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {AppButton, AppCard, AppTextInput, FeatureChecklist, InfoBanner, Stepper, StickyActionBar, StickyActionButton} from '../components';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp, NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import {PrimaryButton} from '../components/common/PrimaryButton';
-import {ScreenContainer} from '../components/common/ScreenContainer';
-import {useResumeStore} from '../store/useResumeStore';
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ROUTES} from '../constants/routes';
+import {useResumeStore} from '../store/useResumeStore';
 import {trackEvent} from '../services/analytics/analytics';
+import {colors, spacing, typography, borderRadius, shadows} from '../app/theme/designTokens';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.EDIT_SUGGESTIONS>;
 
@@ -126,118 +134,231 @@ export const EditSuggestionsScreen = ({route}: Props): React.JSX.Element => {
     setSaved(false);
   };
 
+  const auditItems = useMemo(() => {
+    if (!analysis) {
+      return [];
+    }
+    return [
+      {label: 'Professional summary drafted', completed: Boolean(analysis.suggestedSummary)},
+      {label: 'Skills identified', completed: (analysis.suggestedSkills ?? []).length > 0},
+      {label: 'Experience improvements drafted', completed: (analysis.experienceImprovements ?? []).length > 0},
+      {label: 'ATS formatting tips generated', completed: (analysis.atsTips ?? []).length > 0},
+      {label: 'Custom edits applied', completed: Boolean(analysis.userEditedSuggestions)},
+    ];
+  }, [analysis]);
+
+  const targetRole = useMemo(() => {
+    if (!analysis) {
+      return 'Target role';
+    }
+    if (analysis.jobTitle && analysis.companyName) {
+      return `${analysis.jobTitle} @ ${analysis.companyName}`;
+    }
+    return analysis.jobTitle ?? analysis.companyName ?? 'Target role';
+  }, [analysis]);
+
+  const steps = [
+    {label: 'Review Analysis', completed: true},
+    {label: 'Edit Suggestions', current: true},
+    {label: 'Generate Resume', completed: false},
+  ];
+
   if (!analysis) {
     return (
-      <ScreenContainer scroll>
-        <View style={styles.wrapper}>
-          <AppCard style={styles.card}>
-            <AppCard.Content>
-              <Text style={styles.notFound}>Analysis not found.</Text>
-              <PrimaryButton label="Back" onPress={() => navigation.goBack()} />
-            </AppCard.Content>
-          </AppCard>
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+        <View style={styles.flex}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.wrapper}>
+              <AppCard style={styles.card}>
+                <AppCard.Content>
+                  <Text style={styles.notFound}>Analysis not found.</Text>
+                  <PrimaryButton label="Back" onPress={() => navigation.goBack()} />
+                </AppCard.Content>
+              </AppCard>
+            </View>
+          </ScrollView>
         </View>
-      </ScreenContainer>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScreenContainer scroll>
-      <View style={styles.wrapper}>
-        <AppCard style={styles.card}>
-          <AppCard.Title title="Edit Suggestions" subtitle="Modify the AI recommendations below. Original outputs are preserved." />
-          <AppCard.Content>
-            <Text style={styles.label}>Suggested Professional Summary</Text>
-            <AppTextInput
-              multiline
-              value={draft.suggestedSummary}
-              onChangeText={value => setDraft({...draft, suggestedSummary: value})}
-              style={styles.input}
-              numberOfLines={4}
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboard}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={88}>
+        <View style={styles.flex}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <Stepper steps={steps} style={styles.stepper} />
+
+            <InfoBanner
+              icon="✦"
+              title="Target Role"
+              message={targetRole}
+              tone="primary"
             />
 
-            <Text style={styles.label}>Suggested Skills (one per line)</Text>
-            <AppTextInput
-              multiline
-              value={draft.suggestedSkills}
-              onChangeText={value => setDraft({...draft, suggestedSkills: value})}
-              style={styles.input}
-              numberOfLines={4}
+            <InfoBanner
+              icon="i"
+              title="Ethical AI"
+              message="These recommendations are AI-generated suggestions. Review and adjust them — your resume always stays under your control."
+              tone="blue"
             />
 
-            <Text style={styles.label}>
-              Experience Improvements (one per block, separated by blank lines)
-            </Text>
-            <AppTextInput
-              multiline
-              value={draft.experienceImprovements}
-              onChangeText={value => setDraft({...draft, experienceImprovements: value})}
-              style={[styles.input, styles.tallInput]}
-              numberOfLines={8}
-            />
+            <FeatureChecklist items={auditItems} />
 
-            <Text style={styles.label}>ATS Tips (one per line)</Text>
-            <AppTextInput
-              multiline
-              value={draft.atsTips}
-              onChangeText={value => setDraft({...draft, atsTips: value})}
-              style={styles.input}
-              numberOfLines={4}
-            />
+            <AppCard style={styles.card}>
+              <AppCard.Title
+                title="Edit Suggestions"
+                subtitle="Modify the AI recommendations below. Original outputs are preserved."
+              />
+              <AppCard.Content>
+                <Text style={styles.label}>Suggested Professional Summary</Text>
+                <AppTextInput
+                  multiline
+                  value={draft.suggestedSummary}
+                  onChangeText={value => setDraft({...draft, suggestedSummary: value})}
+                  style={styles.input}
+                  numberOfLines={4}
+                />
 
-            <View style={styles.actions}>
-              <PrimaryButton label={saved ? 'Saved' : 'Save Edits'} onPress={handleSave} />
-              <AppButton mode="text" onPress={handleReset}>
-                Reset to AI original
-              </AppButton>
-            </View>
+                <Text style={styles.label}>Suggested Skills (one per line)</Text>
+                <AppTextInput
+                  multiline
+                  value={draft.suggestedSkills}
+                  onChangeText={value => setDraft({...draft, suggestedSkills: value})}
+                  style={styles.input}
+                  numberOfLines={4}
+                />
 
-            {saved ? (
-              <Text style={styles.savedText}>Your edits have been saved.</Text>
-            ) : null}
-          </AppCard.Content>
-        </AppCard>
-      </View>
-    </ScreenContainer>
+                <Text style={styles.label}>
+                  Experience Improvements (one per block, separated by blank lines)
+                </Text>
+                <AppTextInput
+                  multiline
+                  value={draft.experienceImprovements}
+                  onChangeText={value => setDraft({...draft, experienceImprovements: value})}
+                  style={[styles.input, styles.tallInput]}
+                  numberOfLines={8}
+                />
+
+                <Text style={styles.label}>ATS Tips (one per line)</Text>
+                <AppTextInput
+                  multiline
+                  value={draft.atsTips}
+                  onChangeText={value => setDraft({...draft, atsTips: value})}
+                  style={styles.input}
+                  numberOfLines={4}
+                />
+
+                {saved ? (
+                  <Text style={styles.savedText}>Your edits have been saved.</Text>
+                ) : null}
+              </AppCard.Content>
+            </AppCard>
+          </ScrollView>
+
+          <View style={styles.stickyFooter}>
+            <StickyActionBar>
+              <View style={styles.footerColumn}>
+                <StickyActionButton
+                  label={saved ? 'Saved' : 'Save Edits'}
+                  onPress={handleSave}
+                  variant="primaryDark"
+                  radius={12}
+                  minHeight={48}
+                />
+                <AppButton mode="text" onPress={handleReset} style={styles.resetButton} fullWidth={false}>
+                  Reset to AI original
+                </AppButton>
+              </View>
+            </StickyActionBar>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  keyboard: {
+    flex: 1,
+  },
+  flex: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 136,
+  },
+  scrollView: {
+    flex: 1,
+  },
   wrapper: {
-    gap: 16,
+    gap: spacing.md,
+  },
+  stepper: {
+    alignSelf: 'flex-start',
   },
   card: {
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
   },
   notFound: {
+    ...typography.body,
     fontSize: 16,
-    color: '#64748B',
-    marginBottom: 16,
+    color: colors.textTertiary,
+    marginBottom: spacing.md,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0F172A',
-    marginTop: 12,
-    marginBottom: 6,
+    lineHeight: 20,
+    letterSpacing: -0.07,
+    fontFamily: 'Inter',
+    color: colors.textPrimary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
   },
   input: {
-    backgroundColor: '#FFFFFF',
     minHeight: 100,
   },
   tallInput: {
     minHeight: 160,
   },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 16,
-  },
   savedText: {
-    marginTop: 12,
+    marginTop: spacing.md,
+    ...typography.body,
     fontSize: 13,
-    color: '#14B8A6',
+    color: colors.green,
     fontWeight: '600',
+  },
+  stickyFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.surface,
+    borderTopWidth: 0,
+    ...shadows.fab,
+  },
+  footerColumn: {
+    width: '100%',
+    gap: spacing.xs,
+  },
+  resetButton: {
+    alignSelf: 'center',
   },
 });

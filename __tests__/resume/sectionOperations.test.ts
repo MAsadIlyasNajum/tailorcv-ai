@@ -4,8 +4,12 @@ import {
   reorderSections,
   setSectionVisible,
   renameSection,
+  addEntry,
+  removeEntry,
+  reorderEntries,
+  duplicateEntry,
 } from '../../src/utils/resume/contentMutators';
-import {createSection} from '../../src/utils/resume/sectionFactory';
+import {createSection, createExperienceEntry} from '../../src/utils/resume/sectionFactory';
 import type {ResumeContent} from '../../src/types/resume';
 
 const baseContent = (): ResumeContent => ({sections: []});
@@ -95,5 +99,68 @@ describe('sectionOperations', () => {
     content = removeSection(content, a.id);
     expect(content.sections).toHaveLength(1);
     expect(content.sections[0].type).toBe('education');
+  });
+
+  it('adds entries to a repeatable section', () => {
+    let content = baseContent();
+    const section = createSection('experience', 0);
+    content = addSection(content, section);
+    const e1 = createExperienceEntry(0);
+    const e2 = createExperienceEntry(1);
+    content = addEntry(content, section.id, e1);
+    content = addEntry(content, section.id, e2);
+    expect(content.sections[0].entries).toHaveLength(2);
+  });
+
+  it('removes an entry and preserves others', () => {
+    let content = baseContent();
+    const section = createSection('experience', 0);
+    content = addSection(content, section);
+    const e1 = createExperienceEntry(0);
+    const e2 = createExperienceEntry(1);
+    content = addEntry(content, section.id, e1);
+    content = addEntry(content, section.id, e2);
+
+    content = removeEntry(content, section.id, e1.id);
+    expect(content.sections[0].entries).toHaveLength(1);
+    expect(content.sections[0].entries[0].id).toBe(e2.id);
+  });
+
+  it('reorders entries within a section', () => {
+    let content = baseContent();
+    const section = createSection('experience', 0);
+    content = addSection(content, section);
+    const e1 = createExperienceEntry(0);
+    const e2 = createExperienceEntry(1);
+    content = addEntry(content, section.id, e1);
+    content = addEntry(content, section.id, e2);
+
+    content = reorderEntries(content, section.id, [e2.id, e1.id]);
+    expect(content.sections[0].entries.map((e: any) => e.id)).toEqual([e2.id, e1.id]);
+  });
+
+  it('duplicates an entry and inserts a copy after it', () => {
+    let content = baseContent();
+    const section = createSection('experience', 0);
+    content = addSection(content, section);
+    const e1 = createExperienceEntry(0);
+    content = addEntry(content, section.id, e1);
+
+    content = duplicateEntry(content, section.id, e1.id);
+    expect(content.sections[0].entries).toHaveLength(2);
+    expect(content.sections[0].entries[0].id).toBe(e1.id);
+    expect(content.sections[0].entries[1].id).not.toBe(e1.id);
+  });
+
+  it('duplicateEntry is a no-op for missing entries', () => {
+    let content = baseContent();
+    const section = createSection('experience', 0);
+    content = addSection(content, section);
+    const e1 = createExperienceEntry(0);
+    content = addEntry(content, section.id, e1);
+
+    const before = JSON.stringify(content);
+    content = duplicateEntry(content, section.id, 'missing-id');
+    expect(JSON.stringify(content)).toBe(before);
   });
 });

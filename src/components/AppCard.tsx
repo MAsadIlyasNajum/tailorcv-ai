@@ -67,13 +67,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     lineHeight: 24,
     fontFamily: 'Inter',
   },
   subtitle: {
     fontSize: 14,
+    fontWeight: '500',
     color: colors.textSecondary,
     marginTop: 2,
     lineHeight: 20,

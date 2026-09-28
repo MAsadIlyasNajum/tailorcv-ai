@@ -5,9 +5,11 @@ import {
   StyleProp,
   StyleSheet,
   Text,
+  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
+import {colors, shadows} from '../app/theme/designTokens';
 
 type ButtonMode = 'contained' | 'outlined' | 'text';
 
@@ -21,6 +23,8 @@ interface AppButtonProps {
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
   textColor?: string;
+  bgColor?: string;
+  labelStyle?: StyleProp<TextStyle>;
   children?: React.ReactNode;
   compact?: boolean;
   accessibilityLabel?: string;
@@ -38,6 +42,8 @@ export const AppButton = ({
   fullWidth = true,
   style,
   textColor,
+  bgColor,
+  labelStyle,
   children,
   compact = false,
   accessibilityLabel,
@@ -54,6 +60,7 @@ export const AppButton = ({
     mode === 'text' && styles.text,
     compact && styles.compact,
     isDisabled && styles.disabled,
+    bgColor && {backgroundColor: bgColor},
   ];
 
   const textStyle = [
@@ -63,6 +70,7 @@ export const AppButton = ({
     mode === 'text' && styles.textModeText,
     isDisabled && styles.disabledText,
     textColor && {color: textColor},
+    labelStyle,
   ];
 
   const content = loading ? (
@@ -105,7 +113,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'transparent',
-    minHeight: 48,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
@@ -115,12 +123,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contained: {
-    backgroundColor: '#004AC6',
-    borderColor: '#004AC6',
+    backgroundColor: colors.primaryDark,
+    borderColor: colors.primaryDark,
+    ...shadows.card,
   },
   outlined: {
     backgroundColor: 'transparent',
-    borderColor: '#004AC6',
+    borderColor: colors.primaryDark,
   },
   text: {
     backgroundColor: 'transparent',
@@ -132,7 +141,7 @@ const styles = StyleSheet.create({
   compact: {
     paddingHorizontal: 6,
     paddingVertical: 4,
-    minHeight: 32,
+    minHeight: 36,
   },
   disabled: {
     opacity: 0.4,
@@ -154,17 +163,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 20,
     fontFamily: 'Inter',
+    letterSpacing: -0.07,
   },
   containedText: {
-    color: '#FFFFFF',
+    color: colors.surface,
   },
   outlinedText: {
-    color: '#004AC6',
+    color: colors.primaryDark,
   },
   textModeText: {
-    color: '#004AC6',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+    letterSpacing: 0.12,
+    color: colors.primaryDark,
   },
   disabledText: {
-    color: '#737686',
+    color: colors.textTertiary,
   },
 });

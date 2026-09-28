@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {Alert, Clipboard, Share, StyleSheet, Text, View} from 'react-native';
-import {AppButton, AppCard, AppChip} from '../components';
+import {AppButton, AppCard, AppChip, EmptyState, InfoBanner} from '../components';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
@@ -11,6 +11,7 @@ import {ROUTES} from '../constants/routes';
 import {useResumeStore} from '../store/useResumeStore';
 import {trackEvent} from '../services/analytics/analytics';
 import {exportFinalResumeToPdf, sharePdf} from '../services/pdf/pdfGenerator';
+import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
 
 export const FinalResumeOutputScreen = (): React.JSX.Element => {
   const navigation =
@@ -105,15 +106,13 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
   if (!finalResumeOutput) {
     return (
       <ScreenContainer>
-        <View style={styles.emptyWrapper}>
-          <Text style={styles.emptyTitle}>No final output available yet.</Text>
-          <Text style={styles.emptyBody}>
-            Go back to Analysis Result and generate your polished final output.
-          </Text>
-          <AppButton mode="contained" onPress={() => navigation.goBack()}>
-            Back to Analysis
-          </AppButton>
-        </View>
+        <EmptyState
+          title="No final output available yet."
+          description="Go back to Analysis Result and generate your polished final output."
+          action={
+            <PrimaryButton label="Back to Analysis" onPress={() => navigation.goBack()} />
+          }
+        />
       </ScreenContainer>
     );
   }
@@ -145,6 +144,12 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
+        <InfoBanner
+          title="Final Resume Output"
+          message="Refined summary, prioritized keywords, and polished experience sections ready to export or share."
+          tone="primary"
+        />
+
         <AppCard style={styles.card}>
           <AppCard.Title title="Refined Summary" />
           <AppCard.Content>
@@ -217,27 +222,29 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
           </AppCard.Content>
         </AppCard>
 
-        <View style={styles.buttonRow}>
-          <PrimaryButton
-            label="Export PDF"
-            onPress={handleExportPdf}
-            loading={isExportingPdf}
-            disabled={isExportingPdf}
-            fullWidth={false}
-          />
-          <PrimaryButton
-            label="Share"
-            onPress={handleShare}
-            fullWidth={false}
-          />
+        <View style={styles.stickyActions}>
+          <View style={styles.buttonRow}>
+            <PrimaryButton
+              label="Export PDF"
+              onPress={handleExportPdf}
+              loading={isExportingPdf}
+              disabled={isExportingPdf}
+              fullWidth={false}
+            />
+            <PrimaryButton
+              label="Share"
+              onPress={handleShare}
+              fullWidth={false}
+            />
+          </View>
+          <AppButton
+            mode="contained"
+            onPress={() =>
+              handleCopy(combinedText, 'Full final output package copied to clipboard.')
+            }>
+            Copy full package
+          </AppButton>
         </View>
-        <AppButton
-          mode="contained"
-          onPress={() =>
-            handleCopy(combinedText, 'Full final output package copied to clipboard.')
-          }>
-          Copy full package
-        </AppButton>
       </View>
     </ScreenContainer>
   );
@@ -245,75 +252,68 @@ export const FinalResumeOutputScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: 14,
+    gap: spacing.md,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
+    ...shadows.card,
   },
   summary: {
-    fontSize: 14,
+    ...typography.body,
+    color: colors.textSecondary,
     lineHeight: 22,
-    color: '#334155',
   },
   copyButton: {
     alignSelf: 'flex-start',
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   sectionList: {
-    gap: 10,
+    gap: spacing.sm,
   },
   sectionBlock: {
     paddingVertical: 6,
   },
   sectionHeading: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 4,
+    ...typography.h4,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   sectionSummary: {
-    fontSize: 13,
-    color: '#334155',
+    ...typography.body,
+    color: colors.textSecondary,
     lineHeight: 20,
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   bulletText: {
-    fontSize: 13,
-    color: '#334155',
+    ...typography.body,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   cautionText: {
-    fontSize: 13,
-    color: '#9A3412',
+    ...typography.body,
     lineHeight: 20,
-  },
-  emptyWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    color: '#0F172A',
-    fontWeight: '700',
-    textAlign: 'center',
+    color: '#9A3412',
   },
   emptyBody: {
-    fontSize: 14,
-    color: '#475569',
-    textAlign: 'center',
-    lineHeight: 20,
+    ...typography.body,
+    color: colors.textTertiary,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     flexWrap: 'wrap',
+  },
+  stickyActions: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingTop: spacing.sm,
+    gap: spacing.sm,
+    ...shadows.card,
   },
 });

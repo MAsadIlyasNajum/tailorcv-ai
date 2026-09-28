@@ -21,7 +21,7 @@ export const MetricPill = ({items, style}: MetricPillProps): React.JSX.Element =
           <View key={index} style={styles.item}>
             <Text style={styles.value}>{item.value}</Text>
             <Text style={styles.label}>{item.label}</Text>
-            {!isLast && <View style={styles.separator} />}
+            {!isLast && <Text style={styles.separator}>•</Text>}
           </View>
         );
       })}
@@ -31,13 +31,13 @@ export const MetricPill = ({items, style}: MetricPillProps): React.JSX.Element =
 
 const styles = StyleSheet.create({
   pill: {
-    backgroundColor: colors.blueTint,
+    backgroundColor: colors.primaryTintLighter,
     borderRadius: 9999,
     paddingHorizontal: 12,
     paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
     alignSelf: 'flex-start',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
@@ -51,10 +51,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   separator: {
-    width: 1,
-    height: 14,
-    backgroundColor: colors.textQuaternary,
-    opacity: 0.3,
+    fontSize: 12,
+    lineHeight: 20,
+    color: colors.textTertiary,
+    fontFamily: 'Inter',
   },
   value: {
     fontSize: 11,
@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontFamily: 'Inter',
     lineHeight: 14,
+    letterSpacing: 0.44,
   },
   label: {
     fontSize: 11,
@@ -69,5 +70,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontFamily: 'Inter',
     lineHeight: 14,
+    letterSpacing: 0.44,
   },
 });

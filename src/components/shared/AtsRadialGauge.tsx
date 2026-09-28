@@ -1,10 +1,10 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {colors} from '../app/theme/designTokens';
+import {colors} from '../../app/theme/designTokens';
 
 const SCORE_COLOR: Record<string, string> = {
   green: colors.greenStrong,
-  blue: colors.primary,
+  blue: colors.primaryDark,
   violet: colors.violet,
   red: colors.redStrong,
 };
@@ -50,18 +50,11 @@ export const AtsRadialGauge = ({
         <View
           style={[
             styles.halfFill,
+            styles.halfFillBorder,
             {
               width: size,
               height: size,
               borderRadius: size / 2,
-              borderTopWidth: 4,
-              borderRightWidth: 4,
-              borderBottomWidth: 4,
-              borderLeftWidth: 4,
-              borderStyle: 'solid',
-              borderTopColor: 'transparent',
-              borderRightColor: 'transparent',
-              borderBottomColor: 'transparent',
               borderLeftColor: strokeColor,
               transform: [{rotate: `${rotation}deg`}],
             },
@@ -96,7 +89,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 9999,
-    backgroundColor: colors.primaryTintLight,
+    backgroundColor: colors.borderAccent,
   },
   halfTrack: {
     position: 'absolute',
@@ -104,13 +97,23 @@ const styles = StyleSheet.create({
     left: '50%',
     width: '50%',
     height: '100%',
-    backgroundColor: colors.primaryTintLight,
+    backgroundColor: colors.borderAccent,
     transform: [{translateX: '-50%'}],
   },
   halfFill: {
     position: 'absolute',
     top: 0,
     left: 0,
+  },
+  halfFillBorder: {
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderStyle: 'solid',
+    borderTopColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
   },
   labelContainer: {
     position: 'absolute',

@@ -1,6 +1,6 @@
 import React, {useMemo} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {AppButton, AppCard, AppDivider} from '../components';
+import {AppButton, AppCard, AppDivider, EmptyState} from '../components';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp, NativeStackScreenProps} from '@react-navigation/native-stack';
 
@@ -10,6 +10,7 @@ import {useResumeStore} from '../store/useResumeStore';
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ROUTES} from '../constants/routes';
 import {runStructuredExtraction} from '../services/ai/extractResumeUseCase';
+import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.RESUME_DETAIL>;
 
@@ -51,15 +52,13 @@ export const ResumeDetailScreen = ({route}: Props): React.JSX.Element => {
 
   if (!resume) {
     return (
-      <ScreenContainer scroll>
-        <View style={styles.wrapper}>
-          <AppCard style={styles.card}>
-            <AppCard.Content>
-              <Text style={styles.notFound}>Resume not found.</Text>
-              <PrimaryButton label="Back to Resumes" onPress={() => navigation.goBack()} />
-            </AppCard.Content>
-          </AppCard>
-        </View>
+      <ScreenContainer>
+        <EmptyState
+          title="Resume not found."
+          action={
+            <PrimaryButton label="Back to Resumes" onPress={() => navigation.goBack()} />
+          }
+        />
       </ScreenContainer>
     );
   }
@@ -68,7 +67,10 @@ export const ResumeDetailScreen = ({route}: Props): React.JSX.Element => {
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
         <AppCard style={styles.card}>
-          <AppCard.Title title={resume.name} subtitle={`${resume.sourceType === 'pdf' ? 'PDF' : 'Text'} resume`} />
+          <AppCard.Title
+            title={resume.name}
+            subtitle={`${resume.sourceType === 'pdf' ? 'PDF' : 'Text'} resume`}
+          />
           <AppCard.Content>
             <Text style={styles.sectionTitle}>Resume Text</Text>
             <Text style={styles.bodyText}>{resume.text}</Text>
@@ -119,7 +121,7 @@ export const ResumeDetailScreen = ({route}: Props): React.JSX.Element => {
           </AppCard.Content>
         </AppCard>
 
-        <View style={styles.actions}>
+        <View style={styles.stickyActions}>
           <PrimaryButton
             label="Extract with AI"
             loading={isExtracting}
@@ -143,39 +145,34 @@ export const ResumeDetailScreen = ({route}: Props): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: 16,
+    gap: spacing.md,
   },
   card: {
-    borderRadius: 16,
-  },
-  notFound: {
-    fontSize: 16,
-    color: '#64748B',
-    marginBottom: 16,
+    borderRadius: borderRadius.lg,
+    ...shadows.card,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 12,
-    marginBottom: 4,
+    ...typography.h4,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   bodyText: {
-    fontSize: 14,
-    color: '#334155',
+    ...typography.body,
+    color: colors.textSecondary,
     lineHeight: 22,
   },
   divider: {
-    marginVertical: 12,
+    marginVertical: spacing.md,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#64748B',
+    ...typography.body,
+    color: colors.textTertiary,
   },
   analysisRow: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
     gap: 4,
   },
   analysisHeader: {
@@ -184,21 +181,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   analysisTitle: {
-    fontSize: 15,
+    ...typography.bodySemi,
     fontWeight: '600',
-    color: '#0F172A',
+    color: colors.textPrimary,
     flex: 1,
   },
   analysisScore: {
-    fontSize: 15,
+    ...typography.body,
     fontWeight: '700',
-    color: '#2563EB',
+    color: colors.primary,
   },
   analysisMeta: {
+    ...typography.mono,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textTertiary,
   },
-  actions: {
-    gap: 12,
+  stickyActions: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingTop: spacing.sm,
+    marginTop: spacing.md,
+    gap: spacing.sm,
+    ...shadows.card,
   },
 });

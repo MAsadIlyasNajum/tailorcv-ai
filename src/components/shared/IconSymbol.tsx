@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
-import {colors, typography} from '../app/theme/designTokens';
+import {colors} from '../../app/theme/designTokens';
 
 type IconName =
   | 'home'
@@ -35,31 +35,31 @@ type IconName =
   | 'ai';
 
 const GLYPH: Record<IconName, string> = {
-  home: '🏠',
-  resumes: '📄',
-  ats: '🎯',
-  profile: '👤',
-  back: '←',
-  search: '🔍',
-  clear: '✕',
+  home: '⌂',
+  resumes: '▤',
+  ats: '◎',
+  profile: '○',
+  back: '‹',
+  search: '⌕',
+  clear: '×',
   arrowRight: '→',
   check: '✓',
-  close: '✕',
-  more: '⋮',
+  close: '×',
+  more: '•••',
   edit: '✎',
-  document: '📄',
+  document: '▤',
   sparkle: '✦',
-  shield: '🛡',
-  lock: '🔒',
-  pdf: '/catalog',
-  share: '📤',
-  download: '⬇',
-  calendar: '📅',
-  location: '📍',
+  shield: '◇',
+  lock: '▣',
+  pdf: 'PDF',
+  share: '↑',
+  download: '↓',
+  calendar: '□',
+  location: '⌖',
   mail: '✉',
-  phone: '📞',
-  globe: '🌐',
-  github: 'Cat',
+  phone: '⌕',
+  globe: '◎',
+  github: 'GH',
   plus: '+',
   arrowUp: '↑',
   chevronRight: '›',
@@ -77,7 +77,7 @@ interface IconSymbolProps {
 export const IconSymbol = ({name, size = 20, color = colors.textTertiary, style}: IconSymbolProps): React.JSX.Element => {
   return (
     <View style={[styles.icon, {width: size, height: size}, style]}>
-      <Text style={[styles.glyph, {fontSize: size, color}]}>{GLYPH[name] ?? '•'}</Text>
+      <Text style={[styles.glyph, {fontSize: size, lineHeight: size, color}]}>{GLYPH[name] ?? '•'}</Text>
     </View>
   );
 };
@@ -88,7 +88,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   glyph: {
-    lineHeight: 24,
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });
 

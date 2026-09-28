@@ -3,14 +3,13 @@ import {StyleSheet, Text, View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {PrimaryButton} from '../components/common/PrimaryButton';
-import {AppButton} from '../components/index';
-import {AppCard} from '../components/index';
+import {AppButton, AppCard, EmptyState, InfoBanner} from '../components/index';
 import {ScreenContainer} from '../components/common/ScreenContainer';
 import {useResumeStore} from '../store/useResumeStore';
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ROUTES} from '../constants/routes';
 import type {ResumeSection} from '../types/resume';
-import {editorStyles} from '../components/resumeEditor/styles';
+import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.RESUME_EXTRACTION_REVIEW>;
 
@@ -77,15 +76,13 @@ export const ResumeExtractionReviewScreen = ({route}: Props): React.JSX.Element 
   if (!suggestion) {
     return (
       <ScreenContainer>
-        <AppCard>
-          <AppCard.Title title="AI Suggestions" />
-          <AppCard.Content>
-            <Text style={editorStyles.body}>
-              No structured suggestions are available. Run extraction again from the editor.
-            </Text>
+        <EmptyState
+          title="AI Suggestions"
+          description="No structured suggestions are available. Run extraction again from the editor."
+          action={
             <PrimaryButton label="Back" onPress={() => navigation.goBack()} />
-          </AppCard.Content>
-        </AppCard>
+          }
+        />
       </ScreenContainer>
     );
   }
@@ -114,7 +111,7 @@ export const ResumeExtractionReviewScreen = ({route}: Props): React.JSX.Element 
               ? section.title ?? 'Custom'
               : section.type.charAt(0).toUpperCase() + section.type.slice(1);
           return (
-            <AppCard key={`${section.type}-${index}`}>
+            <AppCard key={`${section.type}-${index}`} style={styles.sectionCard}>
               <AppCard.Title title={`✓ ${label}`} subtitle={summarizeSection(section)} />
               <AppCard.Content>
                 <AppButton label="Accept" onPress={() => handleAcceptSection(section)} />
@@ -124,17 +121,25 @@ export const ResumeExtractionReviewScreen = ({route}: Props): React.JSX.Element 
         })}
 
         {suggestion.unmapped ? (
-          <AppCard>
+          <AppCard style={styles.sectionCard}>
             <AppCard.Title title="Unmapped text preserved" />
             <AppCard.Content>
-              <Text style={editorStyles.body}>{truncate(suggestion.unmapped, 240)}</Text>
+              <Text style={styles.bodyText}>{truncate(suggestion.unmapped, 240)}</Text>
             </AppCard.Content>
           </AppCard>
         ) : null}
 
-        <View style={styles.actions}>
+        <InfoBanner
+          title="Accepted sections"
+          message="Accept all remaining sections or discard the suggestions to start over."
+          tone="violet"
+        />
+
+        <View style={styles.stickyActions}>
           <PrimaryButton label="Accept all remaining" onPress={handleAcceptAll} />
-          <PrimaryButton label="Discard suggestions" onPress={handleDiscard} />
+          <AppButton mode="text" onPress={handleDiscard}>
+            Discard suggestions
+          </AppButton>
         </View>
       </View>
     </ScreenContainer>
@@ -143,14 +148,28 @@ export const ResumeExtractionReviewScreen = ({route}: Props): React.JSX.Element 
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: 12,
+    gap: spacing.md,
+  },
+  sectionCard: {
+    borderRadius: borderRadius.lg,
+    ...shadows.card,
+  },
+  bodyText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
   errorText: {
-    fontSize: 14,
-    color: '#B91C1C',
+    ...typography.body,
+    color: colors.red,
   },
-  actions: {
-    gap: 12,
-    marginTop: 8,
+  stickyActions: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingTop: spacing.sm,
+    marginTop: spacing.md,
+    gap: spacing.sm,
+    ...shadows.card,
   },
 });

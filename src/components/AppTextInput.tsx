@@ -85,10 +85,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
   input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
+    backgroundColor: colors.surfaceTint,
+    borderWidth: 0,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,

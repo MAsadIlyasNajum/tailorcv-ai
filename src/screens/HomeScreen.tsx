@@ -1,6 +1,6 @@
 import React, {useMemo, useLayoutEffect} from 'react';
 import {Alert, Pressable, StyleSheet, Text, View} from 'react-native';
-import {AppCard, PrimaryButton, ResumeCard, MetricPill} from '../components';
+import {AppButton, AppCard, PrimaryButton, ResumeCard, MetricPill, IconSymbol, InfoBanner} from '../components';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import {ScreenContainer} from '../components/common/ScreenContainer';
@@ -247,24 +247,40 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
       <AppCard style={styles.quickContinueCard}>
         <AppCard.Content>
           <View style={styles.quickContinueHeader}>
-            <View style={styles.draftBadge}>
-              <Text style={styles.draftBadgeText}>DRAFT</Text>
+            <View style={styles.draftIconTile}>
+              <IconSymbol name="document" size={20} color={colors.primaryDark} />
             </View>
-            <Text style={styles.quickContinueTitle}>{currentResume.name}</Text>
+            <View style={styles.quickContinueCopy}>
+              <Text style={styles.draftEyebrow}>DRAFT IN PROGRESS</Text>
+              <Text style={styles.quickContinueTitle} numberOfLines={1}>
+                {currentResume.name}
+              </Text>
+            </View>
+            <View style={styles.progressBadge}>
+              <Text style={styles.progressBadgeText}>{progress}%</Text>
+            </View>
           </View>
-          <Text style={styles.quickContinueMeta}>
-            Last edited {formatTimeAgo(currentResume.lastUsedAt)}
-          </Text>
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, {width: `${progress}%`}]} />
             </View>
           </View>
-          <PrimaryButton
-            label="Continue Editing"
-            onPress={handleQuickContinuePress}
-            fullWidth={false}
-          />
+          <View style={styles.quickContinueFooter}>
+            <Text style={styles.quickContinueMeta}>
+              Last edited {formatTimeAgo(currentResume.lastUsedAt)}
+            </Text>
+            <AppButton
+              mode="outlined"
+              compact
+              onPress={handleQuickContinuePress}
+              style={styles.continueButton}
+              accessibilityLabel="Continue Editing">
+              <View style={styles.continueContent}>
+                <Text style={styles.continueButtonLabel}>Continue Editing</Text>
+                <IconSymbol name="chevronRight" size={11} color={colors.primaryDark} />
+              </View>
+            </AppButton>
+          </View>
         </AppCard.Content>
       </AppCard>
     );
@@ -329,24 +345,39 @@ export const HomeScreen = ({navigation}: Props): React.JSX.Element => {
 
   const renderDailyTip = (): React.JSX.Element => {
     return (
-      <AppCard style={styles.tipCard}>
-        <AppCard.Content>
-          <View style={styles.tipHeader}>
-            <Text style={styles.tipLabel}>ATS Insight</Text>
-          </View>
-          <Text style={styles.tipText}>{getRandomTip()}</Text>
-        </AppCard.Content>
-      </AppCard>
+      <InfoBanner
+        icon="✦"
+        title="Daily job-search tip"
+        message={getRandomTip()}
+        tone="delight"
+      />
     );
   };
 
   return (
     <ScreenContainer scroll>
       <View style={styles.wrapper}>
-        <View style={styles.welcomeSection}>
-          <View style={styles.greetingRow}>
-            <Text style={styles.greeting}>{getGreeting()}, 👋</Text>
+        <View style={styles.brandBar}>
+          <View style={styles.brandLockup}>
+            <View style={styles.brandMark}>
+              <Text style={styles.brandMarkText}>R</Text>
+            </View>
+            <Text style={styles.brandName}>Resum<Text style={styles.brandAi}>AI</Text></Text>
           </View>
+          <Pressable
+            accessibilityLabel="Open profile"
+            accessibilityRole="button"
+            onPress={() => navigation.navigate(ROUTES.SETTINGS)}
+            style={({pressed}) => [styles.profileButton, pressed && styles.profileButtonPressed]}>
+            <IconSymbol name="profile" size={20} color={colors.primaryDark} />
+          </Pressable>
+        </View>
+
+        <View style={styles.welcomeSection}>
+            <View style={styles.greetingRow}>
+              <Text style={styles.greeting}>{getGreeting()},</Text>
+              <Text style={styles.greetingGlyph}>👋</Text>
+            </View>
           <Text style={styles.subtitle}>
             Let's optimize your job applications today.
           </Text>
@@ -426,6 +457,52 @@ const styles = StyleSheet.create({
   wrapper: {
     gap: 24,
   },
+  brandBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  brandLockup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandMark: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  brandMarkText: {
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '800',
+    color: colors.surface,
+  },
+  brandName: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    letterSpacing: -0.45,
+    color: colors.textPrimary,
+  },
+  brandAi: {
+    color: colors.primary,
+  },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  profileButtonPressed: {
+    opacity: 0.75,
+  },
   welcomeSection: {
     gap: 8,
   },
@@ -439,7 +516,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     fontFamily: 'Inter',
-    lineHeight: 32,
+    letterSpacing: -0.52,
+    lineHeight: 34,
+  },
+  greetingGlyph: {
+    fontSize: 22,
+    lineHeight: 20,
+    fontFamily: 'serif',
   },
   subtitle: {
     fontSize: 14,
@@ -454,7 +537,7 @@ const styles = StyleSheet.create({
   },
   createCard: {
     borderRadius: 12,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
     overflow: 'hidden',
   },
   tailorCard: {
@@ -468,21 +551,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   fastSetupBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   fastSetupText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.surface,
     fontFamily: 'Inter',
     lineHeight: 14,
   },
   aiMatchBadge: {
     backgroundColor: colors.violetTint,
-    borderRadius: 8,
+    borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 4,
     flexDirection: 'row',
@@ -496,14 +579,14 @@ const styles = StyleSheet.create({
   aiMatchText: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.deepViolet,
+    color: colors.violet,
     fontFamily: 'Inter',
     lineHeight: 14,
   },
   cardTitleWhite: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.surface,
     fontFamily: 'Inter',
     lineHeight: 24,
   },
@@ -542,21 +625,45 @@ const styles = StyleSheet.create({
   quickContinueHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 16,
   },
-  draftBadge: {
-    backgroundColor: colors.violetTint,
+  draftIconTile: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.blueTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickContinueCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  draftEyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+    letterSpacing: 0.55,
+    fontFamily: 'Inter',
+    color: colors.violet,
+  },
+  progressBadge: {
+    backgroundColor: colors.primaryTintLighter,
     borderRadius: 6,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  draftBadgeText: {
-    fontSize: 10,
+  progressBadgeText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: colors.deepViolet,
+    lineHeight: 16,
+    letterSpacing: 0.12,
     fontFamily: 'Inter',
-    lineHeight: 12,
+    color: colors.primaryDark,
   },
   quickContinueTitle: {
     fontSize: 18,
@@ -564,28 +671,56 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontFamily: 'Inter',
     lineHeight: 24,
+    letterSpacing: -0.18,
+  },
+  quickContinueFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   quickContinueMeta: {
+    flex: 1,
     fontSize: 13,
     fontWeight: '400',
     color: colors.textSecondary,
     fontFamily: 'Inter',
     lineHeight: 18,
-    marginBottom: 12,
+  },
+  continueButton: {
+    minHeight: 36,
+    borderRadius: 8,
+    backgroundColor: colors.primaryTintLighter,
+    borderColor: colors.primaryTintLighter,
+    paddingHorizontal: 12,
+    gap: 6,
+  },
+  continueContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  continueButtonLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+    letterSpacing: 0.44,
+    fontFamily: 'Inter',
+    color: colors.primaryDark,
   },
   progressContainer: {
     marginBottom: 12,
   },
   progressTrack: {
-    height: 6,
-    backgroundColor: colors.progressTrack,
-    borderRadius: 3,
+    height: 8,
+    backgroundColor: colors.primaryTintLighter,
+    borderRadius: 9999,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 3,
+    backgroundColor: colors.primaryDark,
+    borderRadius: 9999,
   },
   section: {
     gap: 12,
@@ -619,7 +754,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: colors.shadowColor,
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -635,7 +770,7 @@ const styles = StyleSheet.create({
   auditCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: colors.shadowColor,
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -706,25 +841,6 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     fontWeight: '400',
   },
-  tipCard: {
-    borderRadius: 12,
-    backgroundColor: colors.blueTint,
-  },
-  tipHeader: {
-    marginBottom: 8,
-  },
-  tipLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    fontFamily: 'Inter',
-    lineHeight: 14,
-  },
-   tipText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: colors.textSecondary,
-    fontFamily: 'Inter',
-    lineHeight: 18,
-  },
+
+
 });

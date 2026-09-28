@@ -1,8 +1,6 @@
-import React, {useMemo} from 'react';
+import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {View, StyleSheet, Text} from 'react-native';
-import {useRoute, type RouteProp} from '@react-navigation/native';
+import {createBottomTabNavigator, type BottomTabBarProps} from '@react-navigation/bottom-tabs';
 
 import {ROUTES} from '../../constants/routes';
 import {AnalysisResultScreen} from '../../screens/AnalysisResultScreen';
@@ -21,8 +19,8 @@ import {ResumeExtractionReviewScreen} from '../../screens/ResumeExtractionReview
 import {SettingsScreen} from '../../screens/SettingsScreen';
 import {UploadResumeScreen} from '../../screens/UploadResumeScreen';
 
-import {colors, typography, spacing, borderRadius, shadows} from '../theme/designTokens';
-import {BottomTabBar, IconSymbol} from '../components';
+import {colors} from '../theme/designTokens';
+import {BottomTabBar, IconSymbol} from '../../components';
 
 export type AppStackParamList = {
   [ROUTES.HOME]: undefined;
@@ -53,11 +51,26 @@ const TAB_ITEMS: {key: string; label: string; icon: React.ReactNode; focusedIcon
   {key: ROUTES.SETTINGS, label: 'Profile', icon: <IconSymbol name="profile" size={22} color={colors.textTertiary} />, focusedIcon: <IconSymbol name="profile" size={22} color={colors.primaryDark} />},
 ];
 
-const MainTabs = (): React.JSX.Element => {
-  const [activeKey, setActiveKey] = React.useState<string>(ROUTES.HOME);
+const renderTabBar = ({state, navigation}: BottomTabBarProps): React.JSX.Element => {
+  const activeKey = state.routes[state.index]?.name ?? ROUTES.HOME;
+  return (
+    <BottomTabBar
+      items={TAB_ITEMS}
+      activeKey={activeKey}
+      onNavigate={key => {
+        const event = navigation.emit({type: 'tabPress', target: key, canPreventDefault: true});
+        if (!event.defaultPrevented) {
+          navigation.navigate(key as never);
+        }
+      }}
+    />
+  );
+};
 
+const MainTabs = (): React.JSX.Element => {
   return (
     <Tab.Navigator
+      tabBar={renderTabBar}
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
@@ -78,37 +91,21 @@ const MainTabs = (): React.JSX.Element => {
         name={ROUTES.HOME}
         component={HomeScreen}
         options={{tabBarLabel: 'Home'}}
-        listeners={{state: e => {
-          const route = e.target?.split(':').pop();
-          if (route) setActiveKey(route);
-        } as any}}
       />
       <Tab.Screen
         name={ROUTES.RESUMES}
         component={ResumesScreen}
         options={{tabBarLabel: 'Resumes'}}
-        listeners={{state: e => {
-          const route = e.target?.split(':').pop();
-          if (route) setActiveKey(route);
-        } as any}}
       />
       <Tab.Screen
         name={ROUTES.HISTORY}
         component={HistoryScreen}
         options={{tabBarLabel: 'ATS History'}}
-        listeners={{state: e => {
-          const route = e.target?.split(':').pop();
-          if (route) setActiveKey(route);
-        } as any}}
       />
       <Tab.Screen
         name={ROUTES.SETTINGS}
         component={SettingsScreen}
         options={{tabBarLabel: 'Profile'}}
-        listeners={{state: e => {
-          const route = e.target?.split(':').pop();
-          if (route) setActiveKey(route);
-        } as any}}
       />
     </Tab.Navigator>
   );
@@ -120,7 +117,7 @@ export const AppNavigator = (): React.JSX.Element => {
       initialRouteName={ROUTES.MAIN_TABS}
       screenOptions={{
         headerTintColor: colors.textPrimary,
-        headerTitleStyle: {fontWeight: '700', fontFamily: 'Inter'},
+        headerTitleStyle: {fontSize: 18, fontWeight: '600', fontFamily: 'Inter'},
         headerStyle: {
           backgroundColor: colors.surface,
         },
@@ -180,7 +177,7 @@ export const AppNavigator = (): React.JSX.Element => {
       <Stack.Screen
         name={ROUTES.RESUME_PREVIEW}
         component={ResumePreviewScreen}
-        options={{title: 'Resume Preview'}}
+        options={{title: 'Resume Preview', headerShown: false}}
       />
       <Stack.Screen
         name={ROUTES.RESUME_EXTRACTION_REVIEW}

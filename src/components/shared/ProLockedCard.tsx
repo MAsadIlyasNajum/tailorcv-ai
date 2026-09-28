@@ -1,7 +1,8 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
+import {colors, typography, spacing, shadows} from '../../app/theme/designTokens';
 import {ProBadge} from './ProBadge';
+import {IconSymbol} from './IconSymbol';
 
 interface ProLockedCardProps {
   title: string;
@@ -15,9 +16,10 @@ export const ProLockedCard = ({title, description, lockedFeature, onUpgrade, sty
   return (
     <View style={[styles.card, style]}>
       <View style={styles.lockedRow}>
-        <Text style={styles.lockedIcon}>🔒</Text>
+        <IconSymbol name="lock" size={16} color={colors.violet} />
         <ProBadge size="sm" style={styles.proBadge} />
       </View>
+      <Text style={styles.eyebrow}>PRO EXCLUSIVE CAPABILITY</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {lockedFeature ? <Text style={styles.lockedFeature}>Locked: {lockedFeature}</Text> : null}
@@ -33,30 +35,28 @@ export const ProLockedCard = ({title, description, lockedFeature, onUpgrade, sty
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: 12,
     padding: spacing.lg,
     gap: spacing.sm,
     ...shadows.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 0,
   },
   lockedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  lockedIcon: {
-    fontSize: 16,
-  },
   proBadge: {
     position: 'absolute',
     right: 0,
     top: 0,
   },
+  eyebrow: {
+    ...typography.labelSm,
+    color: colors.amberText,
+  },
   title: {
-    ...typography.h3,
-    fontSize: 18,
-    fontWeight: '700',
+    ...typography.h1,
     color: colors.textPrimary,
   },
   description: {
@@ -68,16 +68,18 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
   },
   upgradeBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
     borderRadius: 8,
+    minHeight: 44,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.xs,
   },
   upgradeText: {
-    color: colors.surface,
     ...typography.body,
+    color: colors.surface,
     fontWeight: '600',
   },
 });

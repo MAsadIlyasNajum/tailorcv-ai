@@ -1,16 +1,18 @@
 import React, {useMemo} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {AppCard, AppDivider} from '../components';
+import {ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp, NativeStackScreenProps} from '@react-navigation/native-stack';
 
-import {PrimaryButton} from '../components/common/PrimaryButton';
+import {AppCard, AppChip, InfoBanner, PrimaryButton, StickyActionBar, StickyActionButton} from '../components';
 import {ScreenContainer} from '../components/common/ScreenContainer';
 import {useResumeStore} from '../store/useResumeStore';
 import type {AppStackParamList} from '../app/navigation/AppNavigator';
 import {ROUTES} from '../constants/routes';
+import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof ROUTES.JOB_APPLICATION_DETAIL>;
+
+const formatTimestamp = (timestamp: number): string => new Date(timestamp).toLocaleString();
 
 export const JobApplicationDetailScreen = ({route}: Props): React.JSX.Element => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -25,8 +27,7 @@ export const JobApplicationDetailScreen = ({route}: Props): React.JSX.Element =>
   );
 
   const relatedAnalysis = useMemo(
-    () =>
-      analysisResults.find(a => a.jobApplicationId === jobApplicationId) ?? null,
+    () => analysisResults.find(a => a.jobApplicationId === jobApplicationId) ?? null,
     [analysisResults, jobApplicationId],
   );
 
@@ -35,170 +36,276 @@ export const JobApplicationDetailScreen = ({route}: Props): React.JSX.Element =>
     [resumes, relatedAnalysis],
   );
 
+  const matchingKeywords = useMemo(
+    () => (relatedAnalysis?.matchingKeywords ?? []).map(keyword =>
+      typeof keyword === 'string' ? keyword : keyword.term,
+    ),
+    [relatedAnalysis?.matchingKeywords],
+  );
+
+  const missingKeywords = useMemo(
+    () => (relatedAnalysis?.missingKeywords ?? []).map(keyword =>
+      typeof keyword === 'string' ? keyword : keyword.term,
+    ),
+    [relatedAnalysis?.missingKeywords],
+  );
+
   if (!application) {
     return (
-      <ScreenContainer scroll>
-        <View style={styles.wrapper}>
-          <AppCard style={styles.card}>
-            <AppCard.Content>
-              <Text style={styles.notFound}>Application not found.</Text>
-              <PrimaryButton label="Back to History" onPress={() => navigation.goBack()} />
-            </AppCard.Content>
-          </AppCard>
+      <ScreenContainer>
+        <View style={styles.notFoundContainer}>
+          <InfoBanner
+            icon="!"
+            title="Application not found"
+            message="This job application is no longer available on this device."
+            tone="neutral"
+          />
+          <PrimaryButton label="Back to History" onPress={() => navigation.goBack()} />
         </View>
       </ScreenContainer>
     );
   }
 
+  const statusLabel = application.status === 'active' ? 'Active' : 'Archived';
+
   return (
-    <ScreenContainer scroll>
-      <View style={styles.wrapper}>
+    <ScreenContainer>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        <View style={styles.heroCard}>
+          <View style={styles.heroAccent} />
+          <View style={styles.heroContent}>
+            <Text style={styles.eyebrow}>{statusLabel.toUpperCase()}</Text>
+            <Text style={styles.title}>{application.jobTitle ?? 'Untitled application'}</Text>
+            <Text style={styles.company}>{application.companyName ?? 'No company specified'}</Text>
+            <View style={styles.metaRow}>
+              <View style={styles.metaPill}>
+                <Text style={styles.metaPillText}>Created {formatTimestamp(application.createdAt)}</Text>
+              </View>
+              <View style={styles.metaPill}>
+                <Text style={styles.metaPillText}>Updated {formatTimestamp(application.updatedAt)}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {resume ? (
+          <View style={styles.resumeBanner}>
+            <Text style={styles.resumeLabel}>LINKED RESUME</Text>
+            <Text style={styles.resumeName}>{resume.name}</Text>
+          </View>
+        ) : null}
+
         <AppCard style={styles.card}>
-          <AppCard.Title
-            title={application.jobTitle ?? 'Untitled application'}
-            subtitle={application.companyName ?? 'No company specified'}
-          />
+          <AppCard.Title title="Job description" subtitle="Stored on this device" />
           <AppCard.Content>
-            <Text style={styles.sectionTitle}>Job Description</Text>
-            <Text style={styles.bodyText}>{application.jobDescription}</Text>
-
-            <AppDivider style={styles.divider} />
-
-            <Text style={styles.sectionTitle}>Details</Text>
-            <Text style={styles.bodyText}>
-              Status: {application.status === 'active' ? 'Active' : 'Archived'}
-            </Text>
-            <Text style={styles.bodyText}>
-              Created: {new Date(application.createdAt).toLocaleString()}
-            </Text>
-            <Text style={styles.bodyText}>
-              Updated: {new Date(application.updatedAt).toLocaleString()}
-            </Text>
-
-            {resume ? (
-              <>
-                <AppDivider style={styles.divider} />
-                <Text style={styles.sectionTitle}>Resume</Text>
-                <Text style={styles.bodyText}>{resume.name}</Text>
-              </>
-            ) : null}
+            <Text style={styles.body}>{application.jobDescription}</Text>
           </AppCard.Content>
         </AppCard>
 
         {relatedAnalysis ? (
           <AppCard style={styles.card}>
-            <AppCard.Title title="Analysis" subtitle={`${relatedAnalysis.matchScore}% Match`} />
-            <AppCard.Content>
-              <View style={styles.analysisRow}>
-                <View style={styles.analysisHeader}>
-                  <Text style={styles.analysisTitle}>Match Score</Text>
-                  <Text style={styles.analysisScore}>{relatedAnalysis.matchScore}%</Text>
+            <AppCard.Title
+              title="ATS analysis"
+              subtitle={`${relatedAnalysis.matchScore}% Resume Match`}
+            />
+            <AppCard.Content style={styles.analysisContent}>
+              <View style={styles.scoreRow}>
+                <View>
+                  <Text style={styles.scoreLabel}>RESUME MATCH</Text>
+                  <Text style={styles.scoreExplanation}>
+                    An estimate of alignment with this job description, not a guarantee of ATS success.
+                  </Text>
                 </View>
+                <Text style={styles.scoreValue}>{relatedAnalysis.matchScore}%</Text>
               </View>
-              <View style={styles.analysisRow}>
-                <Text style={styles.analysisTitle}>Matching Keywords</Text>
-                <Text style={styles.analysisBody}>
-                  {relatedAnalysis.matchingKeywords.length
-                    ? relatedAnalysis.matchingKeywords.join(', ')
-                    : 'None'}
-                </Text>
+
+              <View style={styles.keywordGroup}>
+                <Text style={styles.keywordLabel}>Matching keywords</Text>
+                {matchingKeywords.length ? (
+                  <View style={styles.chipsRow}>
+                    {matchingKeywords.map(keyword => (
+                      <AppChip key={keyword} compact>
+                        {keyword}
+                      </AppChip>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.emptyText}>No matching keywords identified.</Text>
+                )}
               </View>
-              <View style={styles.analysisRow}>
-                <Text style={styles.analysisTitle}>Missing Keywords</Text>
-                <Text style={styles.analysisBody}>
-                  {relatedAnalysis.missingKeywords.length
-                    ? relatedAnalysis.missingKeywords.join(', ')
-                    : 'None'}
-                </Text>
-              </View>
-              <View style={styles.actions}>
-                <PrimaryButton
-                  label="View Full Analysis"
-                  onPress={() =>
-                    navigation.navigate(ROUTES.ANALYSIS_RESULT, {analysisId: relatedAnalysis.id})
-                  }
-                />
-                <PrimaryButton
-                  label="Edit Suggestions"
-                  onPress={() =>
-                    navigation.navigate(ROUTES.EDIT_SUGGESTIONS, {analysisId: relatedAnalysis.id})
-                  }
-                  fullWidth={false}
-                />
+
+              <View style={styles.keywordGroup}>
+                <Text style={styles.keywordLabel}>Missing keywords</Text>
+                {missingKeywords.length ? (
+                  <View style={styles.chipsRow}>
+                    {missingKeywords.map(keyword => (
+                      <AppChip key={keyword} compact>
+                        {keyword}
+                      </AppChip>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.emptyText}>No missing keywords identified.</Text>
+                )}
               </View>
             </AppCard.Content>
           </AppCard>
         ) : (
-          <AppCard style={styles.card}>
-            <AppCard.Content>
-              <Text style={styles.emptyText}>No analysis yet for this application.</Text>
-            </AppCard.Content>
-          </AppCard>
+          <InfoBanner
+            icon="i"
+            title="No analysis yet"
+            message="Run an analysis from this application to see Resume Match and keyword coverage."
+            tone="neutral"
+          />
         )}
-      </View>
+      </ScrollView>
+
+      {relatedAnalysis ? (
+        <StickyActionBar>
+          <StickyActionButton
+            label="Edit Suggestions"
+            variant="secondary"
+            onPress={() =>
+              navigation.navigate(ROUTES.EDIT_SUGGESTIONS, {analysisId: relatedAnalysis.id})
+            }
+          />
+          <StickyActionButton
+            label="View Full Analysis"
+            onPress={() =>
+              navigation.navigate(ROUTES.ANALYSIS_RESULT, {analysisId: relatedAnalysis.id})
+            }
+          />
+        </StickyActionBar>
+      ) : null}
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    gap: 16,
+  scrollContent: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xl2,
+  },
+  notFoundContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: spacing.lg,
+  },
+  heroCard: {
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  heroAccent: {
+    height: 5,
+    backgroundColor: colors.primary,
+  },
+  heroContent: {
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  eyebrow: {
+    ...typography.label,
+    color: colors.primaryDark,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.textPrimary,
+  },
+  company: {
+    ...typography.bodyLarge,
+    color: colors.textSecondary,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  metaPill: {
+    backgroundColor: colors.primaryTintLight,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  metaPillText: {
+    ...typography.badge,
+    color: colors.textSecondary,
+  },
+  resumeBanner: {
+    gap: spacing.xxs,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.violetTintSoft,
+    borderWidth: 1,
+    borderColor: colors.violetTint,
+  },
+  resumeLabel: {
+    ...typography.labelSm,
+    color: colors.violet,
+  },
+  resumeName: {
+    ...typography.h4,
+    color: colors.textPrimary,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
   },
-  notFound: {
-    fontSize: 16,
-    color: '#64748B',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  bodyText: {
-    fontSize: 14,
-    color: '#334155',
+  body: {
+    ...typography.body,
     lineHeight: 22,
+    color: colors.textSecondary,
   },
-  divider: {
-    marginVertical: 12,
+  analysisContent: {
+    gap: spacing.lg,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primaryTintLight,
+  },
+  scoreLabel: {
+    ...typography.labelSm,
+    color: colors.primaryDark,
+    marginBottom: spacing.xs,
+  },
+  scoreExplanation: {
+    ...typography.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  scoreValue: {
+    ...typography.h1,
+    color: colors.primary,
+  },
+  keywordGroup: {
+    gap: spacing.sm,
+  },
+  keywordLabel: {
+    ...typography.h4,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  analysisRow: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    gap: 4,
-  },
-  analysisHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  analysisTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-  analysisScore: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#2563EB',
-  },
-  analysisBody: {
-    fontSize: 14,
-    color: '#334155',
-    lineHeight: 22,
-  },
-  actions: {
-    gap: 12,
-    marginTop: 12,
+    ...typography.body,
+    fontSize: 13,
+    color: colors.textTertiary,
   },
 });

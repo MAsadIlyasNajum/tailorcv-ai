@@ -1,9 +1,8 @@
 import React from 'react';
-import {GestureResponderEvent, Pressable, StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing, borderRadius, shadows} from '../app/theme/designTokens';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {colors, typography, spacing, borderRadius, shadows} from '../../app/theme/designTokens';
 import type {Resume} from '../../types/resume';
 import {AtsRadialGauge} from './AtsRadialGauge';
-import {ScorePill} from './ScorePill';
 
 interface ResumeCardV2Props {
   resume: Resume;

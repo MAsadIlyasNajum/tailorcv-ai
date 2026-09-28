@@ -1,6 +1,6 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {colors, typography, spacing, borderRadius} from '../app/theme/designTokens';
+import {colors, typography, spacing, borderRadius} from '../../app/theme/designTokens';
 
 interface TabOption {
   key: string;

@@ -11,6 +11,7 @@ import {
   reorderSkillGroup,
   reorderSkill,
   updatePersonalInfo,
+  duplicateEntry,
 } from '../../src/utils/resume/contentMutators';
 import {createSection, createExperienceEntry, createSkillGroup, createSkillItem} from '../../src/utils/resume/sectionFactory';
 import type {ResumeContent} from '../../src/types/resume';
@@ -348,5 +349,90 @@ describe('contentMutators', () => {
       throw new Error('expected skills');
     }
     expect(s.uncategorized.map(k => k.name)).toEqual(['Y', 'X']);
+  });
+
+  it('moves contacts within phoneNumbers, addresses, and links', () => {
+    let content = baseContent();
+    const pi = createSection('personalInfo', 0);
+    content = addSection(content, pi);
+    content = updatePersonalInfo(content, pi.id, {
+      phoneNumbers: [
+        {id: 'p1', value: '111'},
+        {id: 'p2', value: '222'},
+        {id: 'p3', value: '333'},
+      ],
+    });
+
+    content = moveContact(content, pi.id, 0, 1, 'phoneNumbers');
+    let data = (content.sections[0] as any).data;
+    expect(data.phoneNumbers.map((c: any) => c.value)).toEqual(['222', '111', '333']);
+
+    content = updatePersonalInfo(content, pi.id, {
+      addresses: [
+        {id: 'a1', value: 'One'},
+        {id: 'a2', value: 'Two'},
+      ],
+    });
+    content = moveContact(content, pi.id, 0, 1, 'addresses');
+    data = (content.sections[0] as any).data;
+    expect(data.addresses.map((c: any) => c.value)).toEqual(['Two', 'One']);
+
+    content = updatePersonalInfo(content, pi.id, {
+      links: [
+        {id: 'l1', value: 'https://x.com'},
+        {id: 'l2', value: 'https://y.com'},
+      ],
+    });
+    content = moveContact(content, pi.id, 0, 1, 'links');
+    data = (content.sections[0] as any).data;
+    expect(data.links.map((c: any) => c.value)).toEqual(['https://y.com', 'https://x.com']);
+  });
+
+  it('does not move contacts out of bounds', () => {
+    let content = baseContent();
+    const pi = createSection('personalInfo', 0);
+    content = addSection(content, pi);
+    content = updatePersonalInfo(content, pi.id, {
+      emails: [
+        {id: 'e1', value: 'a@example.com'},
+        {id: 'e2', value: 'b@example.com'},
+      ],
+    });
+
+    const before = JSON.stringify(content);
+    content = moveContact(content, pi.id, 0, -1, 'emails');
+    content = moveContact(content, pi.id, 1, 1, 'emails');
+    expect(JSON.stringify(content)).toBe(before);
+  });
+
+  it('duplicates an entry and inserts a copy after it', () => {
+    let content = baseContent();
+    const section = createSection('experience', 0);
+    content = addSection(content, section);
+    const e1 = createExperienceEntry(0);
+    content = addEntry(content, section.id, e1);
+
+    content = duplicateEntry(content, section.id, e1.id);
+    const exp = content.sections[0];
+    if (exp.type !== 'experience') {
+      throw new Error('expected experience');
+    }
+    expect(exp.entries).toHaveLength(2);
+    expect(exp.entries[0].id).toBe(e1.id);
+    expect(exp.entries[1].id).not.toBe(e1.id);
+    expect(exp.entries[1].company).toBe(e1.company);
+    expect(exp.entries[1].order).toBe(1);
+  });
+
+  it('duplicateEntry is a no-op when the entry does not exist', () => {
+    let content = baseContent();
+    const section = createSection('experience', 0);
+    content = addSection(content, section);
+    const e1 = createExperienceEntry(0);
+    content = addEntry(content, section.id, e1);
+
+    const before = JSON.stringify(content);
+    content = duplicateEntry(content, section.id, 'missing-id');
+    expect(JSON.stringify(content)).toBe(before);
   });
 });
